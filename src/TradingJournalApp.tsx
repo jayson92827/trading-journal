@@ -2196,8 +2196,6 @@ const checkAchievements = (gameData, trades) => {
   return newAchievements;
 };
 
-export default TradingJournalApp;
-
 // 選項管理組件
 const OptionManager = ({ fields, onFieldsUpdate }) => {
   const [editingField, setEditingField] = useState(null);
