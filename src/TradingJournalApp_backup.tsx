@@ -122,14 +122,12 @@ const FormField = ({ field, value, onChange }) => {
 
 // 統計儀表板組件
 const StatsDashboard = ({ trades, accountBalance, totalPL, gameData }) => {
-  // 確保 trades 是數組
-  const validTrades = Array.isArray(trades) ? trades : [];
-  const closedTrades = validTrades.filter(trade => trade?.closed && trade?.profitLoss !== undefined && trade?.profitLoss !== null);
-  const winningTrades = closedTrades.filter(trade => trade?.profitLoss > 0);
+  const closedTrades = trades.filter(trade => trade.closed && trade.profitLoss !== undefined && trade.profitLoss !== null);
+  const winningTrades = closedTrades.filter(trade => trade.profitLoss > 0);
   const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length * 100) : 0;
-  const avgReturn = closedTrades.length > 0 ? closedTrades.reduce((sum, trade) => sum + (trade?.profitLoss || 0), 0) / closedTrades.length : 0;
-  const adherenceRate = closedTrades.length > 0 ? (closedTrades.filter(trade => trade?.managedByPlan === '是').length / closedTrades.length * 100) : 0;
-  const totalTrades = validTrades.length;
+  const avgReturn = closedTrades.length > 0 ? closedTrades.reduce((sum, trade) => sum + trade.profitLoss, 0) / closedTrades.length : 0;
+  const adherenceRate = closedTrades.length > 0 ? (closedTrades.filter(trade => trade.managedByPlan === '是').length / closedTrades.length * 100) : 0;
+  const totalTrades = trades.length;
   
   const stats = [
     { label: '帳戶餘額', value: `${accountBalance.toFixed(2)}`, color: colors.brand, icon: <DollarSign size={20} /> },
@@ -164,32 +162,8 @@ const TradingJournalApp = () => {
   const [fields, setFields] = useState(defaultFields);
   const [searchTerm, setSearchTerm] = useState('');
   const [accountBalance, setAccountBalance] = useState(10000);
-  const [gameData, setGameData] = useState(() => {
-    // 確保 gameData 有正確的結構
-    return {
-      ...defaultGameData,
-      personalBrand: defaultGameData.personalBrand || {
-        customTitle: '',
-        selectedAvatar: '🌱',
-        tradingPhilosophy: '',
-        marketContribution: 0,
-        helpedNewbies: 0,
-        sharedStrategies: 0
-      },
-      personalRecords: defaultGameData.personalRecords || {
-        longest_win_streak: 0,
-        biggest_single_profit: 0,
-        best_monthly_return: 0,
-        perfect_risk_days: 0,
-        trading_consistency: 0,
-        emotional_control_score: 50
-      },
-      unlockedFeatures: defaultGameData.unlockedFeatures || ['basic_trading'],
-      milestones: defaultGameData.milestones || {}
-    };
-  });
+  const [gameData, setGameData] = useState(defaultGameData);
   const [showAchievementPopup, setShowAchievementPopup] = useState(null);
-  const [strategyTemplates, setStrategyTemplates] = useState([]);
 
   // 計算總損益 - 從當前狀態或傳入參數計算
   const calculateTotalPL = (tradesData = trades) => {
@@ -207,32 +181,29 @@ const TradingJournalApp = () => {
   // 更新遊戲數據 - 根據交易表現動態調整
   const updateGameData = useCallback((tradesData) => {
     console.log('=== updateGameData 開始 ===');
-    console.log('處理交易數量:', tradesData?.length || 0);
-    
-    // 確保 tradesData 是數組
-    const validTradesData = Array.isArray(tradesData) ? tradesData : [];
+    console.log('處理交易數量:', tradesData.length);
     
     const newGameData = { ...gameData };
     
     // 更新統計
-    const closedTrades = validTradesData.filter(trade => trade?.closed);
-    const winningTrades = closedTrades.filter(trade => trade?.profitLoss > 0);
+    const closedTrades = tradesData.filter(trade => trade.closed);
+    const winningTrades = closedTrades.filter(trade => trade.profitLoss > 0);
     
     console.log('已結束交易:', closedTrades.length);
     console.log('盈利交易:', winningTrades.length);
     
     newGameData.stats = {
-      total_trades: validTradesData.length,
+      total_trades: tradesData.length,
       winning_trades: winningTrades.length,
-      plan_adherence: closedTrades.filter(trade => trade?.managedByPlan === '是').length,
-      risk_control_rate: closedTrades.filter(trade => trade?.stopLoss && trade?.managedByPlan === '是').length
+      plan_adherence: closedTrades.filter(trade => trade.managedByPlan === '是').length,
+      risk_control_rate: closedTrades.filter(trade => trade.stopLoss && trade.managedByPlan === '是').length
     };
     
     // 計算連勝
     let currentWin = 0;
     let bestWin = 0;
     for (let i = closedTrades.length - 1; i >= 0; i--) {
-      if (closedTrades[i]?.profitLoss > 0) {
+      if (closedTrades[i].profitLoss > 0) {
         currentWin++;
         bestWin = Math.max(bestWin, currentWin);
       } else {
@@ -243,45 +214,14 @@ const TradingJournalApp = () => {
     newGameData.streaks = {
       ...newGameData.streaks,
       current_win: currentWin,
-      best_win: Math.max(bestWin, newGameData.streaks?.best_win || 0)
+      best_win: Math.max(bestWin, newGameData.streaks.best_win)
     };
-
-    // 更新個人記錄
-    if (!newGameData.personalRecords) {
-      newGameData.personalRecords = defaultGameData.personalRecords;
-    }
-
-    // 更新最長連勝紀錄
-    newGameData.personalRecords.longest_win_streak = Math.max(
-      newGameData.personalRecords.longest_win_streak || 0,
-      bestWin
-    );
-
-    // 更新單筆最大獲利
-    const maxProfit = closedTrades.reduce((max, trade) => 
-      Math.max(max, trade?.profitLoss || 0), 0);
-    newGameData.personalRecords.biggest_single_profit = Math.max(
-      newGameData.personalRecords.biggest_single_profit || 0,
-      maxProfit
-    );
-
-    // 計算情緒控制分數 - 基於冷靜交易的比例
-    const calmTrades = closedTrades.filter(trade => 
-      trade?.emotions?.includes && trade.emotions.includes('冷靜')).length;
-    const emotionalControlScore = closedTrades.length > 0 ? 
-      Math.round((calmTrades / closedTrades.length) * 100) : 50;
-    newGameData.personalRecords.emotional_control_score = emotionalControlScore;
-
-    // 計算交易一致性 - 基於按計劃執行的比例
-    const consistencyScore = closedTrades.length > 0 ? 
-      Math.round((newGameData.stats.plan_adherence / closedTrades.length) * 100) : 0;
-    newGameData.personalRecords.trading_consistency = consistencyScore;
     
     // 檢查新成就
-    const newAchievements = checkAchievements(newGameData, validTradesData);
-    if (Array.isArray(newAchievements) && newAchievements.length > 0) {
-      newGameData.achievements = [...(newGameData.achievements || []), ...newAchievements.map(a => a.id)];
-      newGameData.xp += newAchievements.reduce((sum, a) => sum + (a.xp || 0), 0);
+    const newAchievements = checkAchievements(newGameData, tradesData);
+    if (newAchievements.length > 0) {
+      newGameData.achievements = [...newGameData.achievements, ...newAchievements.map(a => a.id)];
+      newGameData.xp += newAchievements.reduce((sum, a) => sum + a.xp, 0);
       
       // 顯示成就彈窗
       if (newAchievements.length > 0) {
@@ -293,7 +233,7 @@ const TradingJournalApp = () => {
     // 動態XP系統 - 根據交易表現調整XP
     let totalXP = 0;
     closedTrades.forEach(trade => {
-      if (trade && !trade.xpAwarded) {
+      if (!trade.xpAwarded) {
         let xp = 10; // 基礎XP
         
         // 盈利獎勵 - 根據盈利幅度給予不同XP
@@ -303,7 +243,7 @@ const TradingJournalApp = () => {
           else xp += 20; // 小幅盈利
         } else if (trade.profitLoss < 0) {
           // 虧損但有控制風險的獎勵
-          if (trade.managedByPlan === '是' && Math.abs(trade.profitLossPct || 0) < 2) {
+          if (trade.managedByPlan === '是' && Math.abs(trade.profitLossPct) < 2) {
             xp += 10; // 控制虧損獎勵
           }
         }
@@ -312,7 +252,7 @@ const TradingJournalApp = () => {
         if (trade.managedByPlan === '是') xp += 15;
         
         // 情緒控制獎勵
-        if (trade.emotions?.includes && trade.emotions.includes('冷靜')) xp += 10;
+        if (trade.emotions?.includes('冷靜')) xp += 10;
         
         // 風險管理獎勵
         if (trade.stopLoss && trade.takeProfit) xp += 5;
@@ -326,10 +266,10 @@ const TradingJournalApp = () => {
       }
     });
     
-    newGameData.xp = (newGameData.xp || 0) + totalXP;
+    newGameData.xp += totalXP;
     
     // 根據總損益調整XP加成
-    const totalPL = closedTrades.reduce((sum, trade) => sum + (trade?.profitLoss || 0), 0);
+    const totalPL = closedTrades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0);
     if (totalPL > 1000) newGameData.xp += 100; // 大額盈利獎勵
     else if (totalPL > 500) newGameData.xp += 50;
     else if (totalPL > 100) newGameData.xp += 25;
@@ -359,7 +299,6 @@ const TradingJournalApp = () => {
       const savedFields = localStorage.getItem('tradingJournalFields');
       const savedBalance = localStorage.getItem('tradingJournalBalance');
       const savedGameData = localStorage.getItem('tradingJournalGameData');
-      const savedBaseAccount = localStorage.getItem('tradingJournalBaseAccount');
       
       if (savedTrades) {
         const tradesData = JSON.parse(savedTrades);
@@ -371,36 +310,9 @@ const TradingJournalApp = () => {
       }
       if (savedBalance) {
         setAccountBalance(parseFloat(savedBalance));
-      } else if (savedBaseAccount) {
-        // 如果沒有保存的餘額但有基礎帳戶，則設定為基礎帳戶金額
-        const baseAccount = parseFloat(savedBaseAccount);
-        setAccountBalance(baseAccount);
-        localStorage.setItem('tradingJournalBalance', baseAccount.toString());
       }
       if (savedGameData) {
-        const loadedGameData = JSON.parse(savedGameData);
-        // 確保載入的數據包含新的屬性
-        const completeGameData = {
-          ...defaultGameData,
-          ...loadedGameData,
-          personalBrand: {
-            ...defaultGameData.personalBrand,
-            ...(loadedGameData.personalBrand || {})
-          },
-          personalRecords: {
-            ...defaultGameData.personalRecords,
-            ...(loadedGameData.personalRecords || {})
-          },
-          unlockedFeatures: loadedGameData.unlockedFeatures || defaultGameData.unlockedFeatures,
-          milestones: loadedGameData.milestones || defaultGameData.milestones
-        };
-        setGameData(completeGameData);
-      }
-      
-      // 載入策略模板
-      const savedTemplates = localStorage.getItem('strategyTemplates');
-      if (savedTemplates) {
-        setStrategyTemplates(JSON.parse(savedTemplates));
+        setGameData(JSON.parse(savedGameData));
       }
     } catch (error) {
       console.error('載入數據失敗:', error);
@@ -420,13 +332,11 @@ const TradingJournalApp = () => {
     const newTotalPL = calculateTotalPL(newTrades);
     console.log('新的總損益:', newTotalPL);
     
-    // 使用動態基礎帳戶金額
-    const baseAccount = parseFloat(localStorage.getItem('tradingJournalBaseAccount')) || 10000;
+    const baseAccount = 10000;
     const newBalance = baseAccount + newTotalPL;
     setAccountBalance(newBalance);
     localStorage.setItem('tradingJournalBalance', newBalance.toString());
     
-    console.log('基礎帳戶:', baseAccount);
     console.log('新的帳戶餘額:', newBalance);
     
     // 強制重新計算並更新遊戲數據
@@ -554,13 +464,11 @@ const TradingJournalApp = () => {
   };
 
   // 過濾交易
-  const filteredTrades = Array.isArray(trades) ? trades.filter(trade => 
-    trade && (
-      trade.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trade.pair?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trade.direction?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  ) : [];
+  const filteredTrades = trades.filter(trade => 
+    trade.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    trade.pair?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    trade.direction?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // 渲染導航
   const renderNavigation = () => (
@@ -579,7 +487,6 @@ const TradingJournalApp = () => {
         { key: 'trades', label: '交易記錄', icon: <FileText size={18} /> },
         { key: 'achievements', label: '成就系統', icon: <Trophy size={18} /> },
         { key: 'skills', label: '技能樹', icon: <Brain size={18} /> },
-        { key: 'brand', label: '個人品牌', icon: <Crown size={18} /> },
         { key: 'quests', label: '每日任務', icon: <Target size={18} /> },
         { key: 'settings', label: '設置', icon: <Settings size={18} /> }
       ].map(nav => (
@@ -690,149 +597,6 @@ const TradingJournalApp = () => {
                 新增交易
               </button>
             </div>
-
-            {/* 個人交易品牌展示區 */}
-            <div style={{
-              ...cardStyle,
-              marginBottom: '20px',
-              background: `linear-gradient(135deg, ${colors.legendary}20, ${colors.bg1})`,
-              border: `2px solid ${colors.legendary}30`
-            }}>
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
-                <h3 style={{color: colors.txt0, margin: 0, fontSize: '20px', fontWeight: '700'}}>
-                  個人交易品牌
-                </h3>
-                <button
-                  onClick={() => setCurrentView('brand')}
-                  style={{
-                    ...buttonStyle,
-                    backgroundColor: colors.legendary,
-                    padding: '6px 12px',
-                    fontSize: '12px'
-                  }}
-                >
-                  自訂品牌
-                </button>
-              </div>
-              <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
-                <div style={{fontSize: '48px'}}>{gameData.personalBrand?.selectedAvatar || '🌱'}</div>
-                <div style={{flex: 1}}>
-                  <div style={{color: colors.legendary, fontSize: '18px', fontWeight: '700', marginBottom: '4px'}}>
-                    {gameData.personalBrand?.customTitle || '點擊自訂你的交易稱號'}
-                  </div>
-                  <div style={{color: colors.txt2, fontSize: '14px', fontStyle: 'italic'}}>
-                    "{gameData.personalBrand?.tradingPhilosophy || '建立你的交易哲學...'}"
-                  </div>
-                  <div style={{display: 'flex', gap: '16px', marginTop: '8px'}}>
-                    <span style={{color: colors.txt2, fontSize: '12px'}}>
-                      貢獻度: {gameData.personalBrand?.marketContribution || 0}
-                    </span>
-                    <span style={{color: colors.txt2, fontSize: '12px'}}>
-                      幫助新手: {gameData.personalBrand?.helpedNewbies || 0}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 個人記錄展示區 */}
-            <div style={{
-              ...cardStyle,
-              marginBottom: '20px',
-              background: `linear-gradient(135deg, ${colors.gold}20, ${colors.bg1})`,
-              border: `2px solid ${colors.gold}30`
-            }}>
-              <h3 style={{color: colors.txt0, marginBottom: '16px', fontSize: '20px', fontWeight: '700'}}>
-                🏆 個人最佳記錄
-              </h3>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                gap: '12px'
-              }}>
-                {Object.entries(PERSONAL_RECORDS).map(([key, record]) => (
-                  <div key={key} style={{
-                    textAlign: 'center',
-                    padding: '12px',
-                    backgroundColor: colors.bg0,
-                    borderRadius: '12px',
-                    border: `1px solid ${colors.gold}30`
-                  }}>
-                    <div style={{fontSize: '24px', marginBottom: '4px'}}>{record.icon}</div>
-                    <div style={{color: colors.gold, fontSize: '18px', fontWeight: '700'}}>
-                      {gameData.personalRecords?.[key] || 0}{record.unit}
-                    </div>
-                    <div style={{color: colors.txt2, fontSize: '11px', lineHeight: '1.2'}}>
-                      {record.name}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 交易者等級顯示 */}
-            <div style={{
-              ...cardStyle,
-              marginBottom: '20px',
-              background: `linear-gradient(135deg, ${colors.brand}20, ${colors.brand}05)`,
-              border: `2px solid ${colors.brand}30`
-            }}>
-              <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
-                <div style={{fontSize: '48px'}}>
-                  {(() => {
-                    const currentLevel = TRADER_LEVELS.find(level => gameData.xp >= level.minXP && (TRADER_LEVELS.find(l => l.level === level.level + 1)?.minXP > gameData.xp || level.level === 50));
-                    return currentLevel?.icon || '🌱';
-                  })()}
-                </div>
-                <div style={{flex: 1}}>
-                  <div style={{color: colors.txt0, fontSize: '24px', fontWeight: '700', marginBottom: '4px'}}>
-                    {(() => {
-                      const currentLevel = TRADER_LEVELS.find(level => gameData.xp >= level.minXP && (TRADER_LEVELS.find(l => l.level === level.level + 1)?.minXP > gameData.xp || level.level === 50));
-                      return currentLevel?.title || '新手交易者';
-                    })()}
-                  </div>
-                  <div style={{color: colors.txt2, fontSize: '14px', marginBottom: '8px'}}>
-                    {(() => {
-                      const currentLevel = TRADER_LEVELS.find(level => gameData.xp >= level.minXP && (TRADER_LEVELS.find(l => l.level === level.level + 1)?.minXP > gameData.xp || level.level === 50));
-                      return currentLevel?.description || '剛踏入交易世界的探索者';
-                    })()}
-                  </div>
-                  <div style={{color: colors.txt2, fontSize: '14px'}}>
-                    等級 {(() => {
-                      const currentLevel = TRADER_LEVELS.find(level => gameData.xp >= level.minXP && (TRADER_LEVELS.find(l => l.level === level.level + 1)?.minXP > gameData.xp || level.level === 50));
-                      return currentLevel?.level || 1;
-                    })()} • {gameData.xp} XP
-                  </div>
-                </div>
-                <div style={{textAlign: 'right'}}>
-                  <div style={{color: colors.brand, fontSize: '14px', fontWeight: '600'}}>
-                    已獲得 {gameData.achievements.length} 個徽章
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 連勝保護警告 */}
-            {gameData.streaks.current_win >= 3 && (
-              <div style={{
-                ...cardStyle,
-                marginBottom: '20px',
-                backgroundColor: STREAK_PROTECTION[gameData.streaks.current_win]?.color + '20',
-                border: `2px solid ${STREAK_PROTECTION[gameData.streaks.current_win]?.color}50`
-              }}>
-                <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                  <div style={{fontSize: '24px'}}>⚠️</div>
-                  <div>
-                    <div style={{color: colors.txt0, fontSize: '16px', fontWeight: '600', marginBottom: '4px'}}>
-                      連勝保護提醒
-                    </div>
-                    <div style={{color: STREAK_PROTECTION[gameData.streaks.current_win]?.color, fontSize: '14px'}}>
-                      {STREAK_PROTECTION[gameData.streaks.current_win]?.message}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
             
             <PlayerProfile gameData={gameData} onUpdate={saveGameData} />
             <StatsDashboard trades={trades} accountBalance={accountBalance} totalPL={totalPL} gameData={gameData} />
@@ -901,94 +665,18 @@ const TradingJournalApp = () => {
         return (
           <div>
             <h2 style={{color: colors.txt0, marginBottom: '32px', fontSize: '32px', fontWeight: '700'}}>成就系統</h2>
-            
-            {/* 已獲得徽章區域 */}
-            <div style={{...cardStyle, marginBottom: '32px'}}>
-              <h3 style={{color: colors.txt0, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <Trophy size={20} />
-                已獲得徽章 ({gameData.achievements.length})
-              </h3>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '16px'
-              }}>
-                {gameData.achievements.length === 0 ? (
-                  <div style={{
-                    textAlign: 'center',
-                    color: colors.txt2,
-                    padding: '40px',
-                    gridColumn: '1 / -1'
-                  }}>
-                    還沒有獲得任何徽章，開始交易來解鎖成就吧！
-                  </div>
-                ) : (
-                  gameData.achievements.map(badgeId => {
-                    const badge = BADGES[badgeId];
-                    if (!badge) return null;
-                    return (
-                      <div key={badgeId} style={{
-                        padding: '16px',
-                        backgroundColor: colors.bg2,
-                        borderRadius: '12px',
-                        border: `2px solid ${colors.ok}`,
-                        textAlign: 'center',
-                        transition: 'transform 0.2s ease'
-                      }}>
-                        <div style={{fontSize: '32px', marginBottom: '8px'}}>{badge.icon}</div>
-                        <div style={{color: colors.txt0, fontSize: '16px', fontWeight: '600', marginBottom: '4px'}}>
-                          {badge.name}
-                        </div>
-                        <div style={{color: colors.txt2, fontSize: '12px', marginBottom: '8px'}}>
-                          {badge.description}
-                        </div>
-                        <div style={{color: colors.ok, fontSize: '14px', fontWeight: '600'}}>
-                          +{badge.xp} XP
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            {/* 可解鎖徽章區域 */}
-            <div style={cardStyle}>
-              <h3 style={{color: colors.txt0, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <Lock size={20} />
-                待解鎖徽章
-              </h3>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '16px'
-              }}>
-                {Object.entries(BADGES).map(([badgeId, badge]) => {
-                  if (gameData.achievements.includes(badgeId)) return null;
-                  return (
-                    <div key={badgeId} style={{
-                      padding: '16px',
-                      backgroundColor: colors.bg2,
-                      borderRadius: '12px',
-                      border: `2px solid ${colors.border}`,
-                      textAlign: 'center',
-                      opacity: 0.6,
-                      transition: 'transform 0.2s ease'
-                    }}>
-                      <div style={{fontSize: '32px', marginBottom: '8px', filter: 'grayscale(100%)'}}>{badge.icon}</div>
-                      <div style={{color: colors.txt1, fontSize: '16px', fontWeight: '600', marginBottom: '4px'}}>
-                        {badge.name}
-                      </div>
-                      <div style={{color: colors.txt2, fontSize: '12px', marginBottom: '8px'}}>
-                        {badge.description}
-                      </div>
-                      <div style={{color: colors.txt2, fontSize: '14px', fontWeight: '600'}}>
-                        +{badge.xp} XP
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '20px'
+            }}>
+              {gameConfig.achievements.map(achievement => (
+                <AchievementBadge
+                  key={achievement.id}
+                  achievement={achievement}
+                  earned={gameData.achievements.includes(achievement.id)}
+                />
+              ))}
             </div>
           </div>
         );
@@ -1010,7 +698,7 @@ const TradingJournalApp = () => {
         );
 
       case 'edit':
-        const visibleFields = Array.isArray(fields) ? fields.filter(field => field && field.visible) : [];
+        const visibleFields = fields.filter(field => field.visible);
         return (
           <div>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px'}}>
@@ -1048,251 +736,6 @@ const TradingJournalApp = () => {
           </div>
         );
 
-      case 'brand':
-        return (
-          <div>
-            <h2 style={{color: colors.txt0, marginBottom: '32px', fontSize: '32px', fontWeight: '700'}}>個人交易品牌</h2>
-            
-            {/* 自訂交易稱號 */}
-            <div style={{...cardStyle, marginBottom: '32px'}}>
-              <h3 style={{color: colors.txt0, marginBottom: '20px', fontSize: '20px', fontWeight: '700'}}>
-                ✨ 交易稱號
-              </h3>
-              <div style={{marginBottom: '20px'}}>
-                <label style={{color: colors.txt0, display: 'block', marginBottom: '8px'}}>
-                  自訂稱號
-                </label>
-                <input
-                  type="text"
-                  value={gameData.personalBrand?.customTitle || ''}
-                  onChange={(e) => {
-                    const newGameData = {
-                      ...gameData,
-                      personalBrand: {
-                        ...gameData.personalBrand,
-                        customTitle: e.target.value
-                      }
-                    };
-                    saveGameData(newGameData);
-                  }}
-                  placeholder="例如：量化交易專家、技術分析大師"
-                  style={inputStyle}
-                />
-              </div>
-              
-              <div style={{marginBottom: '20px'}}>
-                <label style={{color: colors.txt0, display: 'block', marginBottom: '12px'}}>
-                  選擇頭像
-                </label>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(60px, 1fr))',
-                  gap: '12px'
-                }}>
-                  {TRADING_BRANDS.avatars.map(avatar => (
-                    <button
-                      key={avatar}
-                      onClick={() => {
-                        const newGameData = {
-                          ...gameData,
-                          personalBrand: {
-                            ...gameData.personalBrand,
-                            selectedAvatar: avatar
-                          }
-                        };
-                        saveGameData(newGameData);
-                      }}
-                      style={{
-                        padding: '12px',
-                        fontSize: '32px',
-                        backgroundColor: gameData.personalBrand?.selectedAvatar === avatar ? colors.brand : colors.bg2,
-                        border: `2px solid ${gameData.personalBrand?.selectedAvatar === avatar ? colors.brand : colors.border}`,
-                        borderRadius: '12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                      }}
-                    >
-                      {avatar}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div>
-                <label style={{color: colors.txt0, display: 'block', marginBottom: '12px'}}>
-                  推薦稱號
-                </label>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                  gap: '8px'
-                }}>
-                  {TRADING_BRANDS.titles.map(title => (
-                    <button
-                      key={title}
-                      onClick={() => {
-                        const newGameData = {
-                          ...gameData,
-                          personalBrand: {
-                            ...gameData.personalBrand,
-                            customTitle: title
-                          }
-                        };
-                        saveGameData(newGameData);
-                      }}
-                      style={{
-                        padding: '8px 12px',
-                        backgroundColor: colors.bg2,
-                        border: `1px solid ${colors.border}`,
-                        borderRadius: '20px',
-                        color: colors.txt0,
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        transition: 'all 0.3s ease'
-                      }}
-                    >
-                      {title}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* 交易哲學 */}
-            <div style={{...cardStyle, marginBottom: '32px'}}>
-              <h3 style={{color: colors.txt0, marginBottom: '20px', fontSize: '20px', fontWeight: '700'}}>
-                🧠 交易哲學
-              </h3>
-              <div style={{marginBottom: '20px'}}>
-                <label style={{color: colors.txt0, display: 'block', marginBottom: '8px'}}>
-                  你的交易理念
-                </label>
-                <textarea
-                  value={gameData.personalBrand?.tradingPhilosophy || ''}
-                  onChange={(e) => {
-                    const newGameData = {
-                      ...gameData,
-                      personalBrand: {
-                        ...gameData.personalBrand,
-                        tradingPhilosophy: e.target.value
-                      }
-                    };
-                    saveGameData(newGameData);
-                  }}
-                  placeholder="用一句話描述你的交易哲學..."
-                  style={{
-                    ...inputStyle,
-                    minHeight: '100px',
-                    resize: 'vertical',
-                    fontStyle: 'italic'
-                  }}
-                />
-              </div>
-              
-              <div>
-                <label style={{color: colors.txt0, display: 'block', marginBottom: '12px'}}>
-                  經典交易哲學
-                </label>
-                <div style={{display: 'grid', gap: '8px'}}>
-                  {TRADING_BRANDS.philosophies.map((philosophy, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        const newGameData = {
-                          ...gameData,
-                          personalBrand: {
-                            ...gameData.personalBrand,
-                            tradingPhilosophy: philosophy
-                          }
-                        };
-                        saveGameData(newGameData);
-                      }}
-                      style={{
-                        padding: '12px 16px',
-                        backgroundColor: colors.bg2,
-                        border: `1px solid ${colors.border}`,
-                        borderRadius: '8px',
-                        color: colors.txt0,
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontStyle: 'italic',
-                        textAlign: 'left',
-                        transition: 'all 0.3s ease'
-                      }}
-                    >
-                      "{philosophy}"
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* 市場貢獻度 */}
-            <div style={cardStyle}>
-              <h3 style={{color: colors.txt0, marginBottom: '20px', fontSize: '20px', fontWeight: '700'}}>
-                🤝 市場貢獻度
-              </h3>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '16px'
-              }}>
-                <div style={{
-                  textAlign: 'center',
-                  padding: '16px',
-                  backgroundColor: colors.bg0,
-                  borderRadius: '12px',
-                  border: `1px solid ${colors.border}`
-                }}>
-                  <div style={{fontSize: '32px', marginBottom: '8px'}}>📈</div>
-                  <div style={{color: colors.brand, fontSize: '24px', fontWeight: '700'}}>
-                    {gameData.personalBrand?.marketContribution || 0}
-                  </div>
-                  <div style={{color: colors.txt2, fontSize: '12px'}}>市場分析貢獻</div>
-                </div>
-                <div style={{
-                  textAlign: 'center',
-                  padding: '16px',
-                  backgroundColor: colors.bg0,
-                  borderRadius: '12px',
-                  border: `1px solid ${colors.border}`
-                }}>
-                  <div style={{fontSize: '32px', marginBottom: '8px'}}>🙋‍♂️</div>
-                  <div style={{color: colors.ok, fontSize: '24px', fontWeight: '700'}}>
-                    {gameData.personalBrand?.helpedNewbies || 0}
-                  </div>
-                  <div style={{color: colors.txt2, fontSize: '12px'}}>幫助新手數量</div>
-                </div>
-                <div style={{
-                  textAlign: 'center',
-                  padding: '16px',
-                  backgroundColor: colors.bg0,
-                  borderRadius: '12px',
-                  border: `1px solid ${colors.border}`
-                }}>
-                  <div style={{fontSize: '32px', marginBottom: '8px'}}>📝</div>
-                  <div style={{color: colors.purple, fontSize: '24px', fontWeight: '700'}}>
-                    {gameData.personalBrand?.sharedStrategies || 0}
-                  </div>
-                  <div style={{color: colors.txt2, fontSize: '12px'}}>分享策略數量</div>
-                </div>
-              </div>
-              <div style={{
-                marginTop: '20px',
-                padding: '16px',
-                backgroundColor: colors.bg0,
-                borderRadius: '12px',
-                border: `2px dashed ${colors.brand}`
-              }}>
-                <div style={{textAlign: 'center', color: colors.txt2}}>
-                  💡 提示：透過分享交易策略、幫助新手、貢獻市場分析來提升你的市場影響力！
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
       case 'settings':
         return (
           <div>
@@ -1309,33 +752,13 @@ const TradingJournalApp = () => {
                   <label style={{color: colors.txt0, display: 'block', marginBottom: '8px'}}>初始帳戶餘額</label>
                   <input
                     type="number"
-                    value={(() => {
-                      // 從localStorage讀取基礎帳戶金額，如果沒有則使用10000
-                      const savedBaseAccount = localStorage.getItem('tradingJournalBaseAccount');
-                      return savedBaseAccount ? parseFloat(savedBaseAccount) : 10000;
-                    })()}
-                    onChange={(e) => {
-                      const newBase = parseFloat(e.target.value) || 10000;
-                      // 重新計算帳戶餘額
-                      const currentTotalPL = calculateTotalPL();
-                      const newBalance = newBase + currentTotalPL;
-                      setAccountBalance(newBalance);
-                      localStorage.setItem('tradingJournalBalance', newBalance.toString());
-                      localStorage.setItem('tradingJournalBaseAccount', newBase.toString());
-                    }}
-                    style={{
-                      padding: '12px 16px',
-                      backgroundColor: colors.bg2,
-                      border: `1px solid ${colors.border}`,
-                      borderRadius: '8px',
-                      color: colors.txt0,
-                      fontSize: '16px',
-                      width: '200px'
-                    }}
-                    placeholder="10000"
+                    value={10000}
+                    disabled
+                    style={{...inputStyle, opacity: 0.6}}
+                    placeholder="基礎帳戶金額（固定）"
                   />
                   <div style={{color: colors.txt2, fontSize: '12px', marginTop: '4px'}}>
-                    設定你的初始交易資金
+                    目前帳戶餘額會根據交易損益自動計算
                   </div>
                 </div>
                 <div>
@@ -1375,303 +798,6 @@ const TradingJournalApp = () => {
                   >
                     重置交易記錄
                   </button>
-                </div>
-              </div>
-            </div>
-
-            {/* 策略實驗室 - 增強版 */}
-            <div style={{...cardStyle, marginBottom: '32px'}}>
-              <h3 style={{color: colors.txt0, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <Brain size={20} />
-                策略實驗室 - 創意授權與反饋
-                <span style={{
-                  backgroundColor: colors.legendary,
-                  color: colors.bg0,
-                  padding: '4px 8px',
-                  borderRadius: '12px',
-                  fontSize: '11px',
-                  fontWeight: '700'
-                }}>
-                  八角框架
-                </span>
-              </h3>
-              
-              {/* 預設進階策略模板 */}
-              <div style={{marginBottom: '24px'}}>
-                <h4 style={{color: colors.txt0, marginBottom: '16px', fontSize: '16px'}}>
-                  🎯 專業策略模板
-                </h4>
-                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px'}}>
-                  {[
-                    {
-                      name: '突破交易策略',
-                      description: '基於技術分析的突破點交易，適合趨勢市場',
-                      category: '趨勢跟隨',
-                      risk: '中風險',
-                      timeframe: 'H1-H4',
-                      winRate: '65%',
-                      riskReward: '1:2'
-                    },
-                    {
-                      name: '均線回歸策略',
-                      description: '利用價格回歸均線進行反轉交易',
-                      category: '均線回歸',
-                      risk: '低風險',
-                      timeframe: 'H4-D1',
-                      winRate: '72%',
-                      riskReward: '1:1.5'
-                    },
-                    {
-                      name: '新聞事件交易',
-                      description: '基於重要經濟數據發佈進行短期交易',
-                      category: '基本面',
-                      risk: '高風險',
-                      timeframe: 'M15-H1',
-                      winRate: '58%',
-                      riskReward: '1:3'
-                    },
-                    {
-                      name: '波段震盪策略',
-                      description: '在支撐阻力區間進行高頻交易',
-                      category: '區間交易',
-                      risk: '中風險',
-                      timeframe: 'M30-H1',
-                      winRate: '68%',
-                      riskReward: '1:1.8'
-                    }
-                  ].map((template, index) => (
-                    <div key={index} style={{
-                      padding: '18px',
-                      backgroundColor: colors.bg0,
-                      borderRadius: '12px',
-                      border: `2px solid ${colors.brand}30`,
-                      transition: 'all 0.3s ease'
-                    }}>
-                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px'}}>
-                        <h5 style={{color: colors.brand, fontSize: '16px', fontWeight: '700', margin: 0}}>
-                          {template.name}
-                        </h5>
-                        <span style={{
-                          backgroundColor: template.risk === '高風險' ? colors.err : template.risk === '低風險' ? colors.ok : colors.warn,
-                          color: colors.bg0,
-                          padding: '2px 8px',
-                          borderRadius: '10px',
-                          fontSize: '10px',
-                          fontWeight: '700'
-                        }}>
-                          {template.risk}
-                        </span>
-                      </div>
-                      <p style={{color: colors.txt2, fontSize: '13px', marginBottom: '12px', lineHeight: '1.4'}}>
-                        {template.description}
-                      </p>
-                      <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px'}}>
-                        <div style={{fontSize: '11px'}}>
-                          <span style={{color: colors.txt2}}>類型: </span>
-                          <span style={{color: colors.txt0}}>{template.category}</span>
-                        </div>
-                        <div style={{fontSize: '11px'}}>
-                          <span style={{color: colors.txt2}}>時間框架: </span>
-                          <span style={{color: colors.txt0}}>{template.timeframe}</span>
-                        </div>
-                        <div style={{fontSize: '11px'}}>
-                          <span style={{color: colors.txt2}}>勝率: </span>
-                          <span style={{color: colors.ok}}>{template.winRate}</span>
-                        </div>
-                        <div style={{fontSize: '11px'}}>
-                          <span style={{color: colors.txt2}}>風險回報: </span>
-                          <span style={{color: colors.brand}}>{template.riskReward}</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          const newTemplate = {
-                            id: Date.now() + index,
-                            name: template.name,
-                            description: template.description,
-                            category: template.category,
-                            riskLevel: template.risk,
-                            timeframe: template.timeframe,
-                            expectedWinRate: template.winRate,
-                            riskRewardRatio: template.riskReward,
-                            createdAt: new Date().toISOString(),
-                            isProfessional: true
-                          };
-                          const newTemplates = [...strategyTemplates, newTemplate];
-                          setStrategyTemplates(newTemplates);
-                          localStorage.setItem('strategyTemplates', JSON.stringify(newTemplates));
-                        }}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          backgroundColor: colors.brand + '20',
-                          border: `1px solid ${colors.brand}`,
-                          borderRadius: '8px',
-                          color: colors.brand,
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease'
-                        }}
-                      >
-                        📋 加入我的策略庫
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* 用戶自訂策略 */}
-              <div style={{marginBottom: '20px'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
-                  <h4 style={{color: colors.txt0, margin: 0, fontSize: '16px'}}>
-                    ✨ 我的策略庫
-                  </h4>
-                  <span style={{
-                    backgroundColor: colors.purple,
-                    color: colors.txt0,
-                    padding: '4px 12px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: '700'
-                  }}>
-                    {strategyTemplates.length} 個策略
-                  </span>
-                </div>
-                <p style={{color: colors.txt2, marginBottom: '16px', fontSize: '14px'}}>
-                  創建和管理你的交易策略模板，每個成功的策略都會成為你交易智慧的積累
-                </p>
-                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px'}}>
-                  {strategyTemplates.map(template => (
-                    <div key={template.id} style={{
-                      padding: '16px',
-                      backgroundColor: colors.bg2,
-                      borderRadius: '12px',
-                      border: `2px solid ${template.isProfessional ? colors.legendary : colors.border}`
-                    }}>
-                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px'}}>
-                        <div style={{color: colors.txt0, fontSize: '16px', fontWeight: '600'}}>
-                          {template.isProfessional && '👑 '}{template.name}
-                        </div>
-                        {template.isProfessional && (
-                          <span style={{
-                            backgroundColor: colors.legendary,
-                            color: colors.bg0,
-                            padding: '2px 6px',
-                            borderRadius: '8px',
-                            fontSize: '10px',
-                            fontWeight: '700'
-                          }}>
-                            專業
-                          </span>
-                        )}
-                      </div>
-                      <div style={{color: colors.txt2, fontSize: '13px', marginBottom: '12px', lineHeight: '1.4'}}>
-                        {template.description}
-                      </div>
-                      {template.category && (
-                        <div style={{marginBottom: '12px'}}>
-                          <span style={{
-                            backgroundColor: colors.brand + '20',
-                            color: colors.brand,
-                            padding: '4px 8px',
-                            borderRadius: '12px',
-                            fontSize: '11px',
-                            fontWeight: '600'
-                          }}>
-                            {template.category}
-                          </span>
-                        </div>
-                      )}
-                      <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
-                        <button
-                          onClick={() => {
-                            setFormData({...formData, strategy: template.name});
-                            setCurrentView('edit');
-                          }}
-                          style={{
-                            padding: '6px 12px',
-                            backgroundColor: colors.brand + '20',
-                            border: `1px solid ${colors.brand}`,
-                            borderRadius: '6px',
-                            color: colors.brand,
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                            fontWeight: '600'
-                          }}
-                        >
-                          📊 使用策略
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm('確定要刪除這個策略模板嗎？')) {
-                              const newTemplates = Array.isArray(strategyTemplates) ? strategyTemplates.filter(t => t && t.id !== template.id) : [];
-                              setStrategyTemplates(newTemplates);
-                              localStorage.setItem('strategyTemplates', JSON.stringify(newTemplates));
-                            }
-                          }}
-                          style={{
-                            padding: '6px 12px',
-                            backgroundColor: colors.err + '20',
-                            border: `1px solid ${colors.err}`,
-                            borderRadius: '6px',
-                            color: colors.err,
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                            fontWeight: '600'
-                          }}
-                        >
-                          🗑️ 刪除
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* 創建新策略按鈕 */}
-                  <div
-                    onClick={() => {
-                      const name = prompt('策略名稱：');
-                      if (!name) return;
-                      const description = prompt('策略描述：');
-                      if (!description) return;
-                      const category = prompt('策略類型（例如：趨勢跟隨、區間交易）：') || '自訂策略';
-                      
-                      const newTemplate = {
-                        id: Date.now(),
-                        name,
-                        description,
-                        category,
-                        createdAt: new Date().toISOString(),
-                        isProfessional: false
-                      };
-                      
-                      const newTemplates = [...strategyTemplates, newTemplate];
-                      setStrategyTemplates(newTemplates);
-                      localStorage.setItem('strategyTemplates', JSON.stringify(newTemplates));
-                    }}
-                    style={{
-                      padding: '24px',
-                      backgroundColor: colors.bg2,
-                      borderRadius: '12px',
-                      border: `2px dashed ${colors.brand}`,
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      minHeight: '160px',
-                      transition: 'all 0.3s ease'
-                    }}
-                  >
-                    <PlusCircle size={48} color={colors.brand} style={{marginBottom: '12px'}} />
-                    <div style={{color: colors.brand, fontSize: '16px', fontWeight: '700', marginBottom: '4px'}}>
-                      創建新策略
-                    </div>
-                    <div style={{color: colors.txt2, fontSize: '12px'}}>
-                      建立屬於你的交易策略模板
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1747,7 +873,7 @@ const TradingJournalApp = () => {
   );
 };
 
-export default TradingJournalApp;
+export default TradingJournalApp;import { useState, useEffect, useCallback } from 'react';
 import { 
   PlusCircle, TrendingUp, TrendingDown, Calendar, Target, Settings, BarChart3, 
   FileText, Search, Filter, Eye, EyeOff, Trash2, Edit3, Upload, Download, 
@@ -1755,110 +881,6 @@ import {
   Award, Users, BookOpen, Brain, Heart, Flame, Lock, Gift, Timer,
   Sparkles, Medal, Sword, Compass, Diamond, Gem, Rocket
 } from 'lucide-react';
-
-// 交易者等級系統 - 基於八角框架的史詩意義與使命感
-const TRADER_LEVELS = [
-  { level: 1, title: '新手交易者', minXP: 0, icon: '🌱', color: '#10B981', description: '剛踏入交易世界的探索者' },
-  { level: 5, title: '學徒交易者', minXP: 200, icon: '📚', color: '#3B82F6', description: '開始學習市場規律的學生' },
-  { level: 10, title: '專業交易者', minXP: 1000, icon: '💼', color: '#8B5CF6', description: '掌握基本交易技巧的實踐者' },
-  { level: 20, title: '大師交易者', minXP: 3000, icon: '🎯', color: '#F59E0B', description: '具有豐富經驗的市場專家' },
-  { level: 30, title: '傳奇交易者', minXP: 7000, icon: '👑', color: '#EF4444', description: '在市場中創造傳奇的智者' },
-  { level: 50, title: '市場之神', minXP: 15000, icon: '⚡', color: '#FBBF24', description: '達到交易藝術巔峰的至高存在' }
-];
-
-// 個人交易品牌系統 - 八角框架：創意授權與反饋
-const TRADING_BRANDS = {
-  titles: [
-    '量化分析師', '技術專家', '基本面研究員', '風險管理大師', 
-    '心理戰士', '市場獵人', '趨勢騎士', '套利專家',
-    '波段舞者', '日內刺客', '長線投資家', '價值發現者'
-  ],
-  avatars: [
-    '🚀', '⚡', '🎯', '🔥', '💎', '👑', '🛡️', '⭐', 
-    '🌟', '💫', '✨', '🏆', '🎪', '🎭', '🎨', '🎯'
-  ],
-  philosophies: [
-    '趨勢是我的朋友，我跟隨市場的步伐',
-    '風險控制是成功的基石，每筆交易都要設停損',
-    '耐心等待最佳時機，寧可錯過也不犯錯',
-    '情緒是交易的敵人，冷靜分析才能獲勝',
-    '持續學習和改進，每天都要進步一點點',
-    '紀律執行交易計劃，不被貪婪和恐懼左右'
-  ]
-};
-
-// 里程碑獎勵系統 - 八角框架：進步與成就感
-const MILESTONE_REWARDS = {
-  first_week: {
-    name: '首週勇士',
-    desc: '堅持記錄交易一週',
-    icon: '🗓️',
-    xp: 100,
-    unlockFeature: 'advanced_charts'
-  },
-  profit_milestone_100: {
-    name: '百元獲利',
-    desc: '累計獲利達到100元',
-    icon: '💰',
-    xp: 150,
-    unlockFeature: 'risk_calculator'
-  },
-  profit_milestone_1000: {
-    name: '千元富翁',
-    desc: '累計獲利達到1000元',
-    icon: '💎',
-    xp: 500,
-    unlockFeature: 'advanced_analytics'
-  },
-  streak_master: {
-    name: '連勝大師',
-    desc: '達成10連勝',
-    icon: '🔥',
-    xp: 1000,
-    unlockFeature: 'expert_mode'
-  },
-  discipline_legend: {
-    name: '紀律傳說',
-    desc: '100%按計劃執行50筆交易',
-    icon: '⚖️',
-    xp: 800,
-    unlockFeature: 'strategy_templates'
-  }
-};
-
-// 個人記錄系統 - 八角框架：進步與成就感
-const PERSONAL_RECORDS = {
-  longest_win_streak: { name: '最長連勝紀錄', icon: '🔥', unit: '筆' },
-  biggest_single_profit: { name: '單筆最大獲利', icon: '💰', unit: '$' },
-  best_monthly_return: { name: '最佳月度回報', icon: '📈', unit: '%' },
-  perfect_risk_days: { name: '完美風控天數', icon: '🛡️', unit: '天' },
-  trading_consistency: { name: '交易一致性', icon: '⚖️', unit: '%' },
-  emotional_control_score: { name: '情緒控制分數', icon: '🧘', unit: '分' }
-};
-
-// 徽章系統
-const BADGES = {
-  'first_profit': { name: '首戰告捷', icon: '🎉', description: '完成首筆盈利交易', xp: 50 },
-  'win_streak_3': { name: '三連勝', icon: '🔥', description: '連續3筆盈利交易', xp: 100 },
-  'win_streak_5': { name: '五連勝', icon: '⚡', description: '連續5筆盈利交易', xp: 200 },
-  'win_streak_10': { name: '十連勝', icon: '💫', description: '連續10筆盈利交易', xp: 500 },
-  'risk_master': { name: '風控大師', icon: '🛡️', description: '95%以上交易設置停損', xp: 300 },
-  'discipline_trader': { name: '紀律交易者', icon: '⚖️', description: '90%以上交易按計劃執行', xp: 400 },
-  'monthly_profit': { name: '月度盈利王', icon: '👑', description: '單月盈利超過10%', xp: 600 },
-  'big_winner': { name: '大贏家', icon: '💰', description: '單筆交易盈利超過5%', xp: 250 },
-  'analyst': { name: '技術分析師', icon: '📊', description: '完成50次技術分析', xp: 200 },
-  'strategist': { name: '策略大師', icon: '🎲', description: '使用5種不同交易策略', xp: 300 },
-  'trader_100': { name: '百戰老兵', icon: '🏆', description: '完成100筆交易', xp: 500 },
-  'profit_10k': { name: '萬元富翁', icon: '💎', description: '累計盈利達到10,000', xp: 1000 }
-};
-
-// 連勝保護系統
-const STREAK_PROTECTION = {
-  3: { message: '三連勝！保持冷靜，不要貪婪 💪', color: '#F59E0B' },
-  5: { message: '五連勝！考慮減少倉位規模 ⚠️', color: '#EF4444' },
-  7: { message: '七連勝！市場可能即將轉向 🚨', color: '#DC2626' },
-  10: { message: '十連勝！極度危險，建議停止交易 ☠️', color: '#991B1B' }
-};
 
 // 顏色系統 - 增強遊戲化配色
 const colors = {
@@ -1944,7 +966,7 @@ const gameConfig = {
   ]
 };
 
-// 用戶遊戲化數據結構 - 增強版
+// 用戶遊戲化數據結構
 const defaultGameData = {
   xp: 0,
   level: 1,
@@ -1965,29 +987,7 @@ const defaultGameData = {
     winning_trades: 0,
     plan_adherence: 0,
     risk_control_rate: 0
-  },
-  // 新增：個人交易品牌
-  personalBrand: {
-    customTitle: '',
-    selectedAvatar: '🌱',
-    tradingPhilosophy: '',
-    marketContribution: 0,
-    helpedNewbies: 0,
-    sharedStrategies: 0
-  },
-  // 新增：個人記錄
-  personalRecords: {
-    longest_win_streak: 0,
-    biggest_single_profit: 0,
-    best_monthly_return: 0,
-    perfect_risk_days: 0,
-    trading_consistency: 0,
-    emotional_control_score: 50
-  },
-  // 新增：解鎖的功能
-  unlockedFeatures: ['basic_trading'],
-  // 新增：里程碑進度
-  milestones: {}
+  }
 };
 
 // 完整的交易對列表
@@ -2112,91 +1112,68 @@ const getProgressToNextLevel = (xp) => {
   };
 };
 
-// 成就檢查函數 - 基於新的徽章系統
+// 成就檢查函數
 const checkAchievements = (gameData, trades) => {
   const newAchievements = [];
-  // 確保 trades 是數組
-  const validTrades = Array.isArray(trades) ? trades : [];
-  const closedTrades = validTrades.filter(trade => trade?.closed);
-  const winningTrades = closedTrades.filter(trade => trade?.profitLoss > 0);
   
-  // 檢查每個徽章
-  Object.entries(BADGES).forEach(([badgeId, badge]) => {
-    if (Array.isArray(gameData.achievements) && gameData.achievements.includes(badgeId)) return;
+  gameConfig.achievements.forEach(achievement => {
+    if (gameData.achievements.includes(achievement.id)) return;
     
     let earned = false;
     
-    switch (badgeId) {
+    switch (achievement.id) {
       case 'first_profit':
-        earned = winningTrades.length > 0;
-        break;
-      case 'win_streak_3':
-        earned = gameData.streaks.best_win >= 3;
+        earned = trades.some(trade => trade.closed && trade.profitLoss > 0);
         break;
       case 'win_streak_5':
         earned = gameData.streaks.best_win >= 5;
         break;
-      case 'win_streak_10':
-        earned = gameData.streaks.best_win >= 10;
-        break;
       case 'risk_master':
-        const stopLossRate = closedTrades.length > 0 ? 
-          closedTrades.filter(t => t?.stopLoss).length / closedTrades.length : 0;
-        earned = stopLossRate >= 0.95 && closedTrades.length >= 20;
+        const riskControlTrades = trades.filter(trade => 
+          trade.closed && trade.stopLoss && trade.managedByPlan === '是'
+        );
+        earned = riskControlTrades.length >= 10;
         break;
       case 'discipline_trader':
-        const planRate = closedTrades.length > 0 ? 
-          closedTrades.filter(t => t?.managedByPlan === '是').length / closedTrades.length : 0;
-        earned = planRate >= 0.9 && closedTrades.length >= 20;
+        const planTrades = trades.filter(trade => 
+          trade.closed && trade.managedByPlan === '是'
+        );
+        earned = planTrades.length >= 20;
         break;
-      case 'monthly_profit':
-        // 檢查當月回報率
+      case 'profit_king':
+        // 這裡需要月度統計邏輯
         const thisMonth = new Date();
-        const monthTrades = closedTrades.filter(trade => {
-          if (!trade?.exitDate) return false;
+        const monthTrades = trades.filter(trade => {
+          if (!trade.exitDate || !trade.closed) return false;
           const tradeDate = new Date(trade.exitDate);
           return tradeDate.getMonth() === thisMonth.getMonth() && 
                  tradeDate.getFullYear() === thisMonth.getFullYear();
         });
-        const monthlyReturn = monthTrades.reduce((sum, trade) => sum + (trade?.profitLossPct || 0), 0);
+        const monthlyReturn = monthTrades.reduce((sum, trade) => sum + (trade.profitLossPct || 0), 0);
         earned = monthlyReturn > 10;
         break;
-      case 'big_winner':
-        earned = closedTrades.some(trade => (trade?.profitLossPct || 0) > 5);
+      case 'marathon_trader':
+        earned = gameData.streaks.best_days >= 30;
         break;
-      case 'analyst':
-        // 簡化處理 - 基於交易記錄中的分析數量
-        earned = closedTrades.filter(t => t?.analysis && t.analysis.length > 10).length >= 50;
+      case 'perfect_month':
+        // 需要檢查特定月份無虧損
+        earned = false; // 簡化處理
         break;
-      case 'strategist':
-        // 檢查使用的不同策略數量
-        const strategies = new Set(closedTrades.map(t => t?.strategy).filter(Boolean));
-        earned = strategies.size >= 5;
-        break;
-      case 'trader_100':
-        earned = closedTrades.length >= 100;
-        break;
-      case 'profit_10k':
-        const totalProfit = closedTrades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0);
-        earned = totalProfit >= 10000;
+      case 'emotion_control':
+        const calmTrades = trades.filter(trade => 
+          trade.emotions && trade.emotions.includes('冷靜')
+        );
+        earned = calmTrades.length >= 50;
         break;
     }
     
     if (earned) {
-      newAchievements.push({
-        id: badgeId,
-        name: badge.name,
-        icon: badge.icon,
-        description: badge.description,
-        xp: badge.xp
-      });
+      newAchievements.push(achievement);
     }
   });
   
   return newAchievements;
 };
-
-export default TradingJournalApp;
 
 // 選項管理組件
 const OptionManager = ({ fields, onFieldsUpdate }) => {
@@ -2206,9 +1183,9 @@ const OptionManager = ({ fields, onFieldsUpdate }) => {
   const [newOption, setNewOption] = useState('');
 
   // 可自訂選項的字段
-  const customizableFields = Array.isArray(fields) ? fields.filter(field => 
-    field && field.options && (field.type === 'select' || field.type === 'multiselect')
-  ) : [];
+  const customizableFields = fields.filter(field => 
+    field.options && (field.type === 'select' || field.type === 'multiselect')
+  );
 
   const handleEditOption = (fieldKey, optionIndex) => {
     const field = fields.find(f => f.key === fieldKey);
@@ -2243,7 +1220,7 @@ const OptionManager = ({ fields, onFieldsUpdate }) => {
       try {
         const newFields = fields.map(field => {
           if (field.key === fieldKey) {
-            const newOptions = Array.isArray(field.options) ? field.options.filter((_, index) => index !== optionIndex) : [];
+            const newOptions = field.options.filter((_, index) => index !== optionIndex);
             console.log('新選項列表:', newOptions);
             return { ...field, options: newOptions };
           }
@@ -2547,7 +1524,7 @@ const CustomFieldCreator = ({ fields, onFieldsUpdate }) => {
   const handleRemoveOption = (index) => {
     setFieldData({
       ...fieldData,
-      options: Array.isArray(fieldData.options) ? fieldData.options.filter((_, i) => i !== index) : []
+      options: fieldData.options.filter((_, i) => i !== index)
     });
   };
 
@@ -2842,19 +1819,19 @@ const FieldVisibilityManager = ({ fields, onFieldsUpdate }) => {
     }
 
     if (window.confirm('確定要刪除這個自訂字段嗎？相關的交易數據也會被移除。')) {
-      const newFields = Array.isArray(fields) ? fields.filter(field => field && field.key !== fieldKey) : [];
+      const newFields = fields.filter(field => field.key !== fieldKey);
       onFieldsUpdate(newFields);
       localStorage.setItem('tradingJournalFields', JSON.stringify(newFields));
     }
   };
 
   // 分類字段
-  const systemFields = Array.isArray(fields) ? fields.filter(field => 
-    field && Array.isArray(defaultFields) && defaultFields.some(defaultField => defaultField && defaultField.key === field.key)
-  ) : [];
-  const customFields = Array.isArray(fields) ? fields.filter(field => 
-    field && Array.isArray(defaultFields) && !defaultFields.some(defaultField => defaultField && defaultField.key === field.key)
-  ) : [];
+  const systemFields = fields.filter(field => 
+    defaultFields.some(defaultField => defaultField.key === field.key)
+  );
+  const customFields = fields.filter(field => 
+    !defaultFields.some(defaultField => defaultField.key === field.key)
+  );
 
   return (
     <div style={cardStyle}>
@@ -2869,7 +1846,7 @@ const FieldVisibilityManager = ({ fields, onFieldsUpdate }) => {
           fontSize: '12px',
           fontWeight: '700'
         }}>
-          {Array.isArray(fields) ? fields.filter(f => f && f.visible).length : 0}/{Array.isArray(fields) ? fields.length : 0} 顯示中
+          {fields.filter(f => f.visible).length}/{fields.length} 顯示中
         </span>
       </h3>
 
