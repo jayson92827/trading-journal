@@ -677,7 +677,7 @@ const TradingJournalApp = () => {
     if (savedTrades) {
       const tradesData = JSON.parse(savedTrades);
       setTrades(tradesData);
-      setTimeout(() => updateGameData(tradesData), 100);
+      setTimeout(() => updateGameDataWithNotifications(tradesData), 100);
     }
     if (savedGameData) {
       setGameData({...defaultGameData, ...JSON.parse(savedGameData)});
@@ -720,7 +720,7 @@ const TradingJournalApp = () => {
       if (savedTrades) {
         const tradesData = JSON.parse(savedTrades);
         setTrades(tradesData);
-        setTimeout(() => updateGameData(tradesData), 100);
+        setTimeout(() => updateGameDataWithNotifications(tradesData), 100);
       }
       if (savedFields) {
         setFields(JSON.parse(savedFields));
@@ -788,7 +788,7 @@ const TradingJournalApp = () => {
     // 強制重新計算並更新遊戲數據
     setTimeout(() => {
       console.log('更新遊戲數據中...');
-      updateGameData(newTrades);
+      updateGameDataWithNotifications(newTrades);
     }, 100);
     
     console.log('=== saveTrades 完成 ===');
@@ -797,6 +797,12 @@ const TradingJournalApp = () => {
   const saveGameData = (newGameData) => {
     setGameData(newGameData);
     localStorage.setItem('tradingJournalGameData', JSON.stringify(newGameData));
+    
+    // 保存用戶專用數據
+    if (user) {
+      const userKey = user.email || user.id;
+      localStorage.setItem(`tradingJournalGameData_${userKey}`, JSON.stringify(newGameData));
+    }
   };
 
   // 技能升級
@@ -1000,6 +1006,12 @@ const TradingJournalApp = () => {
     
     setGameData(updatedGameData);
     localStorage.setItem('tradingJournalGameData', JSON.stringify(updatedGameData));
+    
+    // 保存用戶專用的遊戲數據
+    if (user) {
+      const userKey = user.email || user.id;
+      localStorage.setItem(`tradingJournalGameData_${userKey}`, JSON.stringify(updatedGameData));
+    }
     
     // 顯示提醒（僅限新記錄）
     if (isNewRecord) {
@@ -1248,7 +1260,7 @@ const TradingJournalApp = () => {
       localStorage.setItem('tradingJournalBalance', newBalance.toString());
       
       // 更新遊戲數據
-      setTimeout(() => updateGameData(newTrades), 100);
+      setTimeout(() => updateGameDataWithNotifications(newTrades), 100);
       
       console.log('=== 刪除成功 ===');
       
@@ -1291,7 +1303,7 @@ const TradingJournalApp = () => {
         { key: 'trades', label: '交易記錄', icon: <FileText size={18} /> },
         { key: 'achievements', label: '成就系統', icon: <Trophy size={18} /> },
         { key: 'skills', label: '技能樹', icon: <Brain size={18} /> },
-        { key: 'brand', label: '個人品牌', icon: <Crown size={18} /> },
+        { key: 'brand', label: '交易者檔案', icon: <Crown size={18} /> },
         { key: 'quests', label: '每日任務', icon: <Target size={18} /> },
         { key: 'settings', label: '設置', icon: <Settings size={18} /> }
       ].map(nav => (
@@ -1638,14 +1650,14 @@ const TradingJournalApp = () => {
             <div style={{...cardStyle, marginBottom: '32px'}}>
               <h3 style={{color: colors.txt0, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px'}}>
                 <Trophy size={20} />
-                已獲得徽章 ({gameData.achievements.length})
+                已獲得徽章 ({gameData.achievements?.length || 0})
               </h3>
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                 gap: '16px'
               }}>
-                {gameData.achievements.length === 0 ? (
+                {(gameData.achievements?.length || 0) === 0 ? (
                   <div style={{
                     textAlign: 'center',
                     color: colors.txt2,
@@ -1655,7 +1667,7 @@ const TradingJournalApp = () => {
                     還沒有獲得任何徽章，開始交易來解鎖成就吧！
                   </div>
                 ) : (
-                  gameData.achievements.map(badgeId => {
+                  (gameData.achievements || []).map(badgeId => {
                     const badge = BADGES[badgeId];
                     if (!badge) return null;
                     return (
@@ -1696,7 +1708,7 @@ const TradingJournalApp = () => {
                 gap: '16px'
               }}>
                 {Object.entries(BADGES).map(([badgeId, badge]) => {
-                  if (gameData.achievements.includes(badgeId)) return null;
+                  if ((gameData.achievements || []).includes(badgeId)) return null;
                   return (
                     <div key={badgeId} style={{
                       padding: '16px',
@@ -5381,17 +5393,22 @@ const DailyQuests = ({ trades, gameData, onComplete }) => {
   // 處理任務完成
   const handleCompleteQuest = (quest) => {
     if (quest.completed && !completedToday && onComplete) {
+      onComplete(quest.reward, quest.title);
+      
       // 標記今日任務已完成
+      const newCompletedList = [...(gameData.dailyQuestsCompleted || []), today];
       const newGameData = {
         ...gameData,
-        dailyQuestsCompleted: [...(gameData.dailyQuestsCompleted || []), today]
+        dailyQuestsCompleted: newCompletedList
       };
-      
-      onComplete(quest.reward, quest.title);
       
       // 保存任務完成狀態
       setTimeout(() => {
         localStorage.setItem('tradingJournalGameData', JSON.stringify(newGameData));
+        if (window.user) {
+          const userKey = window.user.email || window.user.id;
+          localStorage.setItem(`tradingJournalGameData_${userKey}`, JSON.stringify(newGameData));
+        }
       }, 100);
     }
   };
