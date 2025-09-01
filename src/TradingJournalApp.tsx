@@ -129,24 +129,27 @@ const FormField = ({ field, value, onChange }) => {
   }
 };
 
-// 統計儀表板組件
+// 統計儀表板組件 - 修正：非交易日不計入總交易數量
 const StatsDashboard = ({ trades, accountBalance, totalPL, gameData }) => {
-  // 確保 trades 是數組
+  // 確保 trades 是數組，並分離交易日和非交易日
   const validTrades = Array.isArray(trades) ? trades : [];
-  const closedTrades = validTrades.filter(trade => trade?.closed && trade?.profitLoss !== undefined && trade?.profitLoss !== null);
+  const tradingDayTrades = validTrades.filter(trade => trade?.type === 'trading' || !trade?.type); // 兼容舊數據
+  const nonTradingDayTrades = validTrades.filter(trade => trade?.type === 'non-trading');
+  
+  const closedTrades = tradingDayTrades.filter(trade => trade?.closed && trade?.profitLoss !== undefined && trade?.profitLoss !== null);
   const winningTrades = closedTrades.filter(trade => trade?.profitLoss > 0);
   const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length * 100) : 0;
   const avgReturn = closedTrades.length > 0 ? closedTrades.reduce((sum, trade) => sum + (trade?.profitLoss || 0), 0) / closedTrades.length : 0;
   const adherenceRate = closedTrades.length > 0 ? (closedTrades.filter(trade => trade?.managedByPlan === '是').length / closedTrades.length * 100) : 0;
-  const totalTrades = validTrades.length;
+  const totalTradingDays = tradingDayTrades.length; // 只計算交易日數量
   
   const stats = [
     { label: '帳戶餘額', value: `${accountBalance.toFixed(2)}`, color: colors.brand, icon: <DollarSign size={20} /> },
     { label: '總損益', value: `${totalPL >= 0 ? '+' : ''}${totalPL.toFixed(2)}`, color: totalPL >= 0 ? colors.ok : colors.err, icon: <TrendingUp size={20} /> },
-    { label: '總交易數', value: `${totalTrades}`, color: colors.purple, icon: <FileText size={20} /> },
+    { label: '交易日記錄', value: `${totalTradingDays}`, color: colors.purple, icon: <FileText size={20} /> },
+    { label: '非交易日記錄', value: `${nonTradingDayTrades.length}`, color: colors.cyan, icon: <Calendar size={20} /> },
     { label: '勝率', value: `${winRate.toFixed(1)}%`, color: colors.ok, icon: <Target size={20} /> },
-    { label: '平均回報', value: `${avgReturn >= 0 ? '+' : ''}${avgReturn.toFixed(2)}`, color: avgReturn >= 0 ? colors.ok : colors.err, icon: <BarChart3 size={20} /> },
-    { label: '計劃遵守率', value: `${adherenceRate.toFixed(1)}%`, color: colors.brand, icon: <Calendar size={20} /> }
+    { label: '計劃遵守率', value: `${adherenceRate.toFixed(1)}%`, color: colors.brand, icon: <Shield size={20} /> }
   ];
 
   return (
@@ -1030,7 +1033,9 @@ const TradingJournalApp = () => {
         return (
           <div>
             <h2 style={{color: colors.txt0, marginBottom: '32px', fontSize: '32px', fontWeight: '700'}}>每日任務</h2>
-            <DailyQuests onComplete={() => {}} />
+            <DailyQuests trades={trades} gameData={gameData} onComplete={(xp, title) => {
+              console.log(`任務完成：${title}，獲得 ${xp} XP`);
+            }} />
           </div>
         );
 
@@ -1062,7 +1067,7 @@ const TradingJournalApp = () => {
             </div>
             
             {/* 火焰條顯示 */}
-            <FlameStreak gameData={gameData} trades={trades} />
+            <FlameStreak gameData={gameData} trades={trades} onUpdate={saveGameData} />
             
             <div style={cardStyle}>
               <div style={{display: 'grid', gap: '24px'}}>
@@ -2109,132 +2114,311 @@ const downloadJSON = (data, filename) => {
   document.body.removeChild(link);
 };
 
-// 火焰條組件 - 連續記錄天數追蹤
-const FlameStreak = ({ gameData, trades }) => {
+// 火焰條組件 - 連續記錄天數追蹤 - 增強版
+const FlameStreak = ({ gameData, trades, onUpdate }) => {
   const today = new Date().toDateString();
+  
+  // 檢查今天是否有記錄（交易日或非交易日都算）
   const hasRecordToday = trades.some(trade => {
     const tradeDate = trade.date || trade.entryDate;
     return tradeDate && new Date(tradeDate).toDateString() === today;
   });
   
-  const streakDays = gameData?.streaks?.current_days || 0;
+  // 計算連續記錄天數
+  const calculateStreak = () => {
+    if (!Array.isArray(trades) || trades.length === 0) return 0;
+    
+    // 按日期排序交易記錄
+    const sortedTrades = [...trades].sort((a, b) => {
+      const dateA = new Date(a.date || a.entryDate);
+      const dateB = new Date(b.date || b.entryDate);
+      return dateB - dateA;
+    });
+    
+    // 獲取有記錄的日期（去重）
+    const recordDates = [...new Set(sortedTrades.map(trade => {
+      const tradeDate = trade.date || trade.entryDate;
+      return tradeDate ? new Date(tradeDate).toDateString() : null;
+    }))].filter(Boolean).sort((a, b) => new Date(b) - new Date(a));
+    
+    if (recordDates.length === 0) return 0;
+    
+    // 計算從今天往回的連續天數
+    let streakDays = 0;
+    const todayStr = today;
+    
+    // 檢查是否今天有記錄
+    if (recordDates.includes(todayStr)) {
+      streakDays = 1;
+      
+      // 往前檢查連續性
+      const todayDate = new Date(today);
+      for (let i = 1; i < recordDates.length; i++) {
+        const prevDay = new Date(todayDate);
+        prevDay.setDate(todayDate.getDate() - i);
+        const prevDayStr = prevDay.toDateString();
+        
+        if (recordDates.includes(prevDayStr)) {
+          streakDays++;
+        } else {
+          break;
+        }
+      }
+    }
+    
+    return streakDays;
+  };
+  
+  const currentStreak = calculateStreak();
   const maxStreak = 30;
-  const flameIntensity = Math.min(streakDays / maxStreak, 1);
+  
+  // 更新遊戲數據中的連勝記錄
+  React.useEffect(() => {
+    if (onUpdate && currentStreak !== gameData?.streaks?.current_days) {
+      const updatedGameData = {
+        ...gameData,
+        streaks: {
+          ...gameData?.streaks,
+          current_days: currentStreak,
+          best_days: Math.max(currentStreak, gameData?.streaks?.best_days || 0)
+        }
+      };
+      onUpdate(updatedGameData);
+    }
+  }, [currentStreak, gameData, onUpdate]);
   
   const getFlameEmoji = (days) => {
-    if (days === 0) return '🔥';
+    if (days === 0) return '💀';
     if (days < 3) return '🔥';
     if (days < 7) return '🔥🔥';
     if (days < 14) return '🔥🔥🔥';
-    return '🔥🔥🔥🔥';
+    if (days < 21) return '🔥🔥🔥🔥';
+    return '🔥🔥🔥🔥⚡';
   };
   
   const getFlameColor = (days, hasRecord) => {
     if (!hasRecord && days === 0) return colors.err;
+    if (days === 0) return colors.txt2;
     if (days < 3) return colors.warn;
     if (days < 7) return colors.brand;
     if (days < 14) return colors.gold;
-    return colors.legendary;
+    if (days < 21) return colors.legendary;
+    return colors.diamond;
+  };
+  
+  const getMotivationMessage = (days, hasRecord) => {
+    if (!hasRecord && days === 0) return '💀 今日尚未記錄 - 火焰已熄滅！';
+    if (!hasRecord && days > 0) return '⚠️ 今日尚未記錄 - 火焰即將熄滅！';
+    if (days === 1) return '🌱 記錄習慣開始萌芽';
+    if (days < 3) return '🔥 不錯！繼續保持';
+    if (days < 7) return '🔥🔥 習慣正在形成中';
+    if (days < 14) return '🔥🔥🔥 優秀！交易紀律很棒';
+    if (days < 21) return '🔥🔥🔥🔥 專業交易者水準！';
+    return '🔥🔥🔥🔥⚡ 傳奇級交易者！';
   };
   
   return (
     <div style={{
       ...cardStyle,
-      marginBottom: '32px',
-      background: `linear-gradient(135deg, ${getFlameColor(streakDays, hasRecordToday)}20, ${colors.bg1})`,
-      border: `2px solid ${getFlameColor(streakDays, hasRecordToday)}30`
+      marginBottom: '24px',
+      background: `linear-gradient(135deg, ${getFlameColor(currentStreak, hasRecordToday)}30, ${colors.bg1}10)`,
+      border: `2px solid ${getFlameColor(currentStreak, hasRecordToday)}50`,
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-        <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
-          <div style={{fontSize: '48px'}}>
-            {hasRecordToday ? getFlameEmoji(streakDays) : '💀'}
+      {/* 背景動畫效果 */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: currentStreak > 7 ? `
+          radial-gradient(circle at 20% 20%, ${getFlameColor(currentStreak, hasRecordToday)}20 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, ${getFlameColor(currentStreak, hasRecordToday)}15 0%, transparent 50%)
+        ` : 'none',
+        opacity: 0.3
+      }} />
+      
+      <div style={{position: 'relative', zIndex: 1}}>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+            <div style={{
+              fontSize: '52px',
+              filter: currentStreak > 14 ? 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.6))' : 'none',
+              animation: !hasRecordToday && currentStreak > 0 ? 'pulse 2s infinite' : 'none'
+            }}>
+              {getFlameEmoji(currentStreak)}
+            </div>
+            <div>
+              <div style={{
+                color: getFlameColor(currentStreak, hasRecordToday), 
+                fontSize: '24px', 
+                fontWeight: '800',
+                marginBottom: '4px',
+                textShadow: currentStreak > 14 ? '0 0 10px rgba(255, 215, 0, 0.4)' : 'none'
+              }}>
+                {currentStreak > 0 ? `🔥 火焰連擊：${currentStreak} 天` : '💀 火焰已熄滅'}
+              </div>
+              <div style={{color: colors.txt2, fontSize: '14px', lineHeight: '1.4'}}>
+                {getMotivationMessage(currentStreak, hasRecordToday)}
+              </div>
+            </div>
           </div>
-          <div>
-            <div style={{color: colors.txt0, fontSize: '20px', fontWeight: '700', marginBottom: '4px'}}>
-              {hasRecordToday ? `🔥 火焰連擊：${streakDays} 天` : '💀 今日尚未記錄'}
+          
+          <div style={{textAlign: 'right'}}>
+            <div style={{
+              color: getFlameColor(currentStreak, hasRecordToday), 
+              fontSize: '32px', 
+              fontWeight: '800',
+              textShadow: currentStreak > 14 ? '0 0 8px rgba(255, 215, 0, 0.4)' : 'none'
+            }}>
+              {currentStreak}
             </div>
-            <div style={{color: colors.txt2, fontSize: '14px'}}>
-              {hasRecordToday 
-                ? '太棒了！保持每日記錄的好習慣' 
-                : '快來記錄今天的交易或非交易日，維持火焰不滅！'}
-            </div>
+            <div style={{color: colors.txt2, fontSize: '12px'}}>連續天數</div>
+            {gameData?.streaks?.best_days > 0 && (
+              <div style={{
+                color: colors.gold, 
+                fontSize: '10px', 
+                marginTop: '4px'
+              }}>
+                最佳: {gameData.streaks.best_days}天
+              </div>
+            )}
           </div>
         </div>
         
-        <div style={{textAlign: 'right'}}>
-          <div style={{color: getFlameColor(streakDays, hasRecordToday), fontSize: '24px', fontWeight: '700'}}>
-            {streakDays}
-          </div>
-          <div style={{color: colors.txt2, fontSize: '12px'}}>連續天數</div>
-        </div>
-      </div>
-      
-      {/* 進度條 */}
-      <div style={{marginTop: '16px'}}>
-        <div style={{
-          backgroundColor: colors.bg0,
-          borderRadius: '12px',
-          padding: '4px',
-          position: 'relative'
-        }}>
+        {/* 進度條 */}
+        <div style={{marginBottom: '16px'}}>
           <div style={{
-            background: `linear-gradient(90deg, ${getFlameColor(streakDays, hasRecordToday)}, ${colors.gold})`,
-            height: '8px',
-            borderRadius: '8px',
-            width: `${(streakDays / maxStreak) * 100}%`,
-            transition: 'width 0.8s ease'
-          }} />
-        </div>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          fontSize: '12px',
-          color: colors.txt2,
-          marginTop: '4px'
-        }}>
-          <span>目標：連續 {maxStreak} 天</span>
-          <span>{Math.round((streakDays / maxStreak) * 100)}% 完成</span>
-        </div>
-      </div>
-      
-      {!hasRecordToday && (
-        <div style={{
-          marginTop: '16px',
-          padding: '12px',
-          backgroundColor: colors.err + '20',
-          borderRadius: '8px',
-          border: `1px solid ${colors.err}`,
-          textAlign: 'center'
-        }}>
-          <div style={{color: colors.err, fontSize: '14px', fontWeight: '600'}}>
-            ⚠️ 火焰即將熄滅！趕快記錄今天的交易活動
+            backgroundColor: colors.bg0,
+            borderRadius: '12px',
+            padding: '4px',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              background: `linear-gradient(90deg, ${getFlameColor(currentStreak, hasRecordToday)}, ${colors.gold})`,
+              height: '12px',
+              borderRadius: '8px',
+              width: `${Math.min((currentStreak / maxStreak) * 100, 100)}%`,
+              transition: 'width 1s ease-out',
+              boxShadow: currentStreak > 7 ? `0 0 10px ${getFlameColor(currentStreak, hasRecordToday)}60` : 'none'
+            }} />
+          </div>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontSize: '11px',
+            color: colors.txt2,
+            marginTop: '6px'
+          }}>
+            <span>目標：連續 {maxStreak} 天記錄</span>
+            <span>{Math.round((currentStreak / maxStreak) * 100)}% 完成</span>
           </div>
         </div>
-      )}
+        
+        {/* 里程碑提示 */}
+        {currentStreak > 0 && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '8px',
+            flexWrap: 'wrap'
+          }}>
+            {[3, 7, 14, 21, 30].map(milestone => (
+              <div key={milestone} style={{
+                padding: '4px 8px',
+                borderRadius: '12px',
+                fontSize: '10px',
+                fontWeight: '600',
+                backgroundColor: currentStreak >= milestone ? getFlameColor(milestone, true) + '30' : colors.bg0,
+                color: currentStreak >= milestone ? getFlameColor(milestone, true) : colors.txt2,
+                border: `1px solid ${currentStreak >= milestone ? getFlameColor(milestone, true) : colors.txt2}30`
+              }}>
+                {milestone}天 {currentStreak >= milestone ? '✓' : ''}
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* 緊急提醒 */}
+        {!hasRecordToday && currentStreak > 0 && (
+          <div style={{
+            marginTop: '16px',
+            padding: '12px',
+            backgroundColor: colors.err + '20',
+            borderRadius: '12px',
+            border: `2px solid ${colors.err}`,
+            textAlign: 'center'
+          }}>
+            <div style={{color: colors.err, fontSize: '14px', fontWeight: '700'}}>
+              ⚠️ 緊急提醒：{currentStreak} 天連擊即將中斷！
+            </div>
+            <div style={{color: colors.txt2, fontSize: '12px', marginTop: '4px'}}>
+              趕快記錄今天的交易活動以維持火焰不滅
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <style>
+        {`
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+          }
+        `}
+      </style>
     </div>
   );
 };
 
-// 錯誤模式分析組件
+// 錯誤模式分析組件 - 增強版，包含更多錯誤類型
 const ErrorPatternAnalysis = ({ trades }) => {
   const closedTrades = Array.isArray(trades) ? trades.filter(trade => trade?.closed && trade.type === 'trading') : [];
   
-  // 分析常見錯誤
+  // 分析常見錯誤 - 擴展更多錯誤類型
   const analyzeErrors = () => {
     const errors = {
       '過早出場': 0,
       '情緒化交易': 0,
       '不符策略': 0,
       '風控失誤': 0,
-      '過度交易': 0
+      '過度交易': 0,
+      '追單': 0,
+      '過早停損': 0,
+      '拖延進場': 0,
+      '部位過大': 0,
+      '無視止損': 0,
+      '逆勢加倉': 0,
+      '恐慌出場': 0,
+      '貪婪持倉': 0,
+      '計劃外交易': 0,
+      '技術分析錯誤': 0
     };
     
     closedTrades.forEach(trade => {
-      if (trade.customTags?.includes('過早出場')) errors['過早出場']++;
-      if (trade.customTags?.includes('情緒化交易')) errors['情緒化交易']++;
+      // 檢查自訂標籤中的錯誤
+      if (Array.isArray(trade.customTags)) {
+        trade.customTags.forEach(tag => {
+          if (errors.hasOwnProperty(tag)) {
+            errors[tag]++;
+          }
+        });
+      }
+      
+      // 基於其他字段推導錯誤
       if (trade.strategyCompliant === '否 ❌') errors['不符策略']++;
       if (trade.riskControl === '否') errors['風控失誤']++;
       if (trade.overTrading === '是') errors['過度交易']++;
+      
+      // 基於情緒推導錯誤
+      if (Array.isArray(trade.emotions)) {
+        if (trade.emotions.includes('恐懼')) errors['恐慌出場']++;
+        if (trade.emotions.includes('貪婪')) errors['貪婪持倉']++;
+        if (trade.emotions.includes('焦躁')) errors['情緒化交易']++;
+      }
     });
     
     return Object.entries(errors)
@@ -2243,11 +2427,51 @@ const ErrorPatternAnalysis = ({ trades }) => {
         count,
         percentage: closedTrades.length > 0 ? Math.round((count / closedTrades.length) * 100) : 0
       }))
+      .filter(item => item.count > 0) // 只顯示有發生的錯誤
       .sort((a, b) => b.count - a.count)
-      .slice(0, 3);
+      .slice(0, 5); // 顯示前5個錯誤
+  };
+  
+  // 獲得改進建議
+  const getImprovementSuggestions = (topErrors) => {
+    if (topErrors.length === 0) {
+      return ['交易紀律良好，繼續保持！', '建議定期檢視交易計劃', '持續學習新的交易技能'];
+    }
+    
+    const suggestions = [];
+    const topError = topErrors[0];
+    
+    switch (topError.error) {
+      case '過早出場':
+        suggestions.push('制定明確的出場規則，避免情緒決策');
+        suggestions.push('使用部分獲利了結，讓趨勢繼續走');
+        break;
+      case '追單':
+        suggestions.push('設定嚴格的進場條件，避免FOMO心態');
+        suggestions.push('錯過就錯過，等待下一個機會');
+        break;
+      case '不符策略':
+        suggestions.push('每次進場前檢查是否符合策略條件');
+        suggestions.push('設定策略檢查清單');
+        break;
+      case '風控失誤':
+        suggestions.push('嚴格執行1%風險規則');
+        suggestions.push('每筆交易必須設定停損');
+        break;
+      case '情緒化交易':
+        suggestions.push('建立交易前的情緒檢查機制');
+        suggestions.push('情緒不穩時避免交易');
+        break;
+      default:
+        suggestions.push(`重點改善「${topError.error}」問題`);
+        suggestions.push('建議記錄更多細節以找出根本原因');
+    }
+    
+    return suggestions;
   };
   
   const topErrors = analyzeErrors();
+  const improvements = getImprovementSuggestions(topErrors);
   
   return (
     <div style={{
@@ -2257,18 +2481,34 @@ const ErrorPatternAnalysis = ({ trades }) => {
       border: `2px solid ${colors.warn}30`
     }}>
       <h3 style={{color: colors.txt0, marginBottom: '16px', fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px'}}>
-        📊 錯誤模式分析
+        📊 錯誤模式分析 
+        <span style={{
+          backgroundColor: colors.warn,
+          color: colors.bg0,
+          padding: '4px 8px',
+          borderRadius: '12px',
+          fontSize: '11px',
+          fontWeight: '700'
+        }}>
+          智能分析
+        </span>
       </h3>
       
       {topErrors.length === 0 ? (
         <div style={{textAlign: 'center', color: colors.txt2, padding: '20px'}}>
-          暫無足夠的交易數據進行分析
+          <div style={{fontSize: '48px', marginBottom: '12px'}}>🎉</div>
+          <div style={{color: colors.ok, fontSize: '16px', fontWeight: '600'}}>
+            優秀！暫無明顯錯誤模式
+          </div>
+          <div style={{fontSize: '14px', marginTop: '8px'}}>
+            繼續保持良好的交易紀律
+          </div>
         </div>
       ) : (
         <>
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
             gap: '12px',
             marginBottom: '16px'
           }}>
@@ -2278,32 +2518,77 @@ const ErrorPatternAnalysis = ({ trades }) => {
                 padding: '12px',
                 backgroundColor: colors.bg0,
                 borderRadius: '8px',
-                border: `1px solid ${index === 0 ? colors.err : colors.warn}`
+                border: `2px solid ${
+                  index === 0 ? colors.err : 
+                  index === 1 ? colors.warn : 
+                  colors.txt2
+                }`,
+                position: 'relative'
               }}>
-                <div style={{color: index === 0 ? colors.err : colors.warn, fontSize: '18px', fontWeight: '700'}}>
+                {index === 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '-6px',
+                    right: '-6px',
+                    backgroundColor: colors.err,
+                    color: colors.txt0,
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: '700'
+                  }}>
+                    !
+                  </div>
+                )}
+                <div style={{
+                  color: index === 0 ? colors.err : index === 1 ? colors.warn : colors.txt1, 
+                  fontSize: '20px', 
+                  fontWeight: '700'
+                }}>
                   {errorData.percentage}%
                 </div>
-                <div style={{color: colors.txt2, fontSize: '12px'}}>
+                <div style={{color: colors.txt2, fontSize: '11px', lineHeight: '1.2'}}>
                   {errorData.error}
+                </div>
+                <div style={{color: colors.txt2, fontSize: '10px', marginTop: '4px'}}>
+                  {errorData.count}次
                 </div>
               </div>
             ))}
           </div>
           
           <div style={{
-            padding: '12px',
+            padding: '16px',
             backgroundColor: colors.brand + '20',
-            borderRadius: '8px',
-            border: `1px solid ${colors.brand}`
+            borderRadius: '12px',
+            border: `2px solid ${colors.brand}30`
           }}>
-            <div style={{color: colors.brand, fontSize: '14px', fontWeight: '600', marginBottom: '4px'}}>
-              💡 下週改進建議
+            <div style={{color: colors.brand, fontSize: '16px', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              💡 個人化改進建議
             </div>
-            <div style={{color: colors.txt1, fontSize: '13px'}}>
-              {topErrors.length > 0 && topErrors[0].percentage > 20 
-                ? `重點關注「${topErrors[0].error}」問題，建議在交易前制定明確的出場計劃` 
-                : '繼續保持良好的交易紀律，細心記錄每筆交易的執行情況'}
-            </div>
+            {improvements.map((suggestion, index) => (
+              <div key={index} style={{
+                color: colors.txt1, 
+                fontSize: '14px',
+                marginBottom: '6px',
+                paddingLeft: '16px',
+                position: 'relative'
+              }}>
+                <span style={{
+                  position: 'absolute',
+                  left: '0',
+                  color: colors.brand,
+                  fontWeight: '700'
+                }}>
+                  {index + 1}.
+                </span>
+                {suggestion}
+              </div>
+            ))}
           </div>
         </>
       )}
@@ -2570,7 +2855,7 @@ const patterns = [
   '其他', 'Cup & Handle', 'Rectangle', 'Pennant', 'Diamond'
 ];
 
-// 預設字段配置 - 調整版本，支援交易日和非交易日
+// 預設字段配置 - 調整版本，支援交易日和非交易日，加入圖片中的技術型態
 const defaultFields = [
   // 通用字段
   { key: 'type', label: '記錄類型', type: 'select', options: ['trading', 'non-trading'], visible: true, required: true, category: 'common' },
@@ -2593,13 +2878,36 @@ const defaultFields = [
   { key: 'profitLossPct', label: '損益百分比 (%)', type: 'number', visible: true, category: 'trading' },
   { key: 'rMultiple', label: 'R 倍數', type: 'number', visible: true, category: 'trading' },
   { key: 'strategy', label: '策略名稱', type: 'text', visible: true, category: 'trading' },
+  
+  // Rule of Three 和技術型態 - 根據圖片內容
+  { key: 'ruleOfThree', label: 'Rule of Three', type: 'select', options: ['Impulse Wave', 'Corrective Wave', 'Structural Wave'], visible: true, category: 'trading' },
+  { key: 'technicalPattern', label: '技術型態', type: 'multiselect', options: [
+    // 旗型
+    'Bull Flag', 'Bear Flag', 'Flat Flag',
+    // 三角形
+    'Symmetrical Triangle', 'Expanding Triangle', 'Ascending Triangle', 'Descending Triangle',
+    // 通道
+    'Ascending Channel', 'Descending Channel', 'Parallel Channel',
+    // 楔形
+    'Rising Wedge', 'Falling Wedge',
+    // 經典型態
+    'Head & Shoulders', 'Inverse Head & Shoulders', 'Double Top', 'Double Bottom'
+  ], visible: true, category: 'trading' },
+  
   { key: 'entryReason', label: '進場依據', type: 'multiselect', options: ['技術分析', '基本面', '新聞事件', '突破', '反彈', '趨勢跟隨', '逆勢交易', '型態交易'], visible: true, category: 'trading' },
   { key: 'strategyCompliant', label: '符合策略清單', type: 'select', options: ['是 ✅', '否 ❌'], visible: true, category: 'trading' },
   { key: 'riskControl', label: '嚴守風控 (0.5%/1%)', type: 'select', options: ['是', '否'], visible: true, category: 'trading' },
   { key: 'overTrading', label: '是否過度交易', type: 'select', options: ['否', '是'], visible: true, category: 'trading' },
   { key: 'emotions', label: '情緒狀態', type: 'multiselect', options: ['冷靜', '貪婪', '恐懼', '焦躁'], visible: true, category: 'trading' },
   { key: 'mentalScore', label: '心態打分 (1-5)', type: 'select', options: ['1', '2', '3', '4', '5'], visible: true, category: 'trading' },
-  { key: 'customTags', label: '自訂標籤', type: 'multiselect', options: ['過早出場', '不符策略', '情緒化交易', '完美執行', '資金管理佳'], visible: true, category: 'trading' },
+  
+  // 增強的錯誤分析標籤
+  { key: 'customTags', label: '自訂標籤', type: 'multiselect', options: [
+    '過早出場', '不符策略', '情緒化交易', '完美執行', '資金管理佳', 
+    '追單', '過早停損', '拖延進場', '部位過大', '無視止損',
+    '逆勢加倉', '恐慌出場', '貪婪持倉', '計劃外交易', '技術分析錯誤'
+  ], visible: true, category: 'trading' },
+  
   { key: 'screenshot', label: '交易截圖', type: 'image', visible: true, category: 'trading' },
   { key: 'closed', label: '交易已結束', type: 'checkbox', visible: true, category: 'trading' },
   { key: 'managedByPlan', label: '按計劃管理', type: 'select', options: ['是', '否'], visible: true, category: 'trading' },
