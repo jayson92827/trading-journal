@@ -889,7 +889,10 @@ const TradingJournalApp = () => {
     const tradeData = { 
       ...formData, 
       id: editingTrade?.id || Date.now(),
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      profitLoss: parseFloat(formData.profitLoss) || 0,
+      closed: formData.closed || false,
+      date: formData.entryDate || formData.date
     };
     
     let newTrades;
@@ -901,17 +904,19 @@ const TradingJournalApp = () => {
       newTrades = [...trades, tradeData];
     }
     
-    // 保存交易
+    // 立即更新 trades 狀態
+    setTrades(newTrades);
+    
+    // 保存到 localStorage
     saveTrades(newTrades);
     
-    // 計算並更新遊戲數據（包含連勝提醒）
-    setTimeout(() => {
-      updateGameDataWithNotifications(newTrades, !editingTrade);
-    }, 100);
+    // 立即計算並更新遊戲數據
+    updateGameDataWithNotifications(newTrades, !editingTrade);
     
+    // 重置表單
     setEditingTrade(null);
     setFormData({});
-    setCurrentView('dashboard'); // 修改：回到儀表板查看更新
+    setCurrentView('dashboard');
     
     console.log('=== handleSaveTrade 完成 ===');
   };
@@ -992,9 +997,44 @@ const TradingJournalApp = () => {
     
     bestWinStreak = Math.max(bestWinStreak, currentWinStreak);
     
+    // 檢查並解鎖成就
+    const currentAchievements = gameData.achievements || [];
+    let newAchievements = [...currentAchievements];
+    let newlyUnlockedAchievements = [];
+    
+    // 首次盈利
+    const winTrades = tradingTrades.filter(trade => trade.closed && trade.profitLoss > 0);
+    if (winTrades.length >= 1 && !newAchievements.includes('first_profit')) {
+      newAchievements.push('first_profit');
+      newlyUnlockedAchievements.push('first_profit');
+      totalXP += BADGES['first_profit'].xp;
+    }
+    
+    // 三連勝
+    if (currentWinStreak >= 3 && !newAchievements.includes('win_streak_3')) {
+      newAchievements.push('win_streak_3');
+      newlyUnlockedAchievements.push('win_streak_3');
+      totalXP += BADGES['win_streak_3'].xp;
+    }
+    
+    // 五連勝
+    if (currentWinStreak >= 5 && !newAchievements.includes('win_streak_5')) {
+      newAchievements.push('win_streak_5');
+      newlyUnlockedAchievements.push('win_streak_5');
+      totalXP += BADGES['win_streak_5'].xp;
+    }
+    
+    // 十連勝
+    if (currentWinStreak >= 10 && !newAchievements.includes('win_streak_10')) {
+      newAchievements.push('win_streak_10');
+      newlyUnlockedAchievements.push('win_streak_10');
+      totalXP += BADGES['win_streak_10'].xp;
+    }
+    
     const updatedGameData = {
       ...gameData,
       xp: totalXP,
+      achievements: newAchievements,
       streaks: {
         current_win: currentWinStreak,
         best_win: bestWinStreak,
@@ -1087,6 +1127,18 @@ const TradingJournalApp = () => {
           });
         }
         
+        // 新成就解鎖提醒
+        newlyUnlockedAchievements.forEach(achievementId => {
+          const achievement = BADGES[achievementId];
+          if (achievement) {
+            notifications.push({
+              message: `🏆 新成就解鎖！\n\n${achievement.icon} ${achievement.name}\n${achievement.description}\n\n🎁 獲得 ${achievement.xp} XP！`,
+              delay: 800 + newlyUnlockedAchievements.indexOf(achievementId) * 500,
+              type: 'achievement'
+            });
+          }
+        });
+        
         // 經驗值升級提醒
         const prevLevel = Math.floor((gameData.xp || 0) / 100) + 1;
         const newLevel = Math.floor(totalXP / 100) + 1;
@@ -1114,6 +1166,7 @@ const TradingJournalApp = () => {
             const isStreakNotification = notification.type === 'streak';
             const isWinStreak = notification.type === 'win_streak';
             const isLevelUp = notification.type === 'level_up';
+            const isAchievement = notification.type === 'achievement';
             
             let bgColor, borderColor, icon;
             
@@ -1129,6 +1182,10 @@ const TradingJournalApp = () => {
               bgColor = 'linear-gradient(135deg, #FFD700, #FFA500)';
               borderColor = '#FFD700';
               icon = '🎈';
+            } else if (isAchievement) {
+              bgColor = 'linear-gradient(135deg, #9333EA, #C084FC)';
+              borderColor = '#9333EA';
+              icon = '🏆';
             } else {
               bgColor = 'linear-gradient(135deg, #8B5CF6, #A855F7)';
               borderColor = '#8B5CF6';
@@ -2904,68 +2961,9 @@ const FlameStreak = ({ gameData, trades, onUpdate }) => {
     return tradeDate && new Date(tradeDate).toDateString() === today;
   });
   
-  // 計算連續記錄天數
-  const calculateStreak = () => {
-    if (!Array.isArray(trades) || trades.length === 0) return 0;
-    
-    // 按日期排序交易記錄
-    const sortedTrades = [...trades].sort((a, b) => {
-      const dateA = new Date(a.date || a.entryDate);
-      const dateB = new Date(b.date || b.entryDate);
-      return dateB - dateA;
-    });
-    
-    // 獲取有記錄的日期（去重）
-    const recordDates = [...new Set(sortedTrades.map(trade => {
-      const tradeDate = trade.date || trade.entryDate;
-      return tradeDate ? new Date(tradeDate).toDateString() : null;
-    }))].filter(Boolean).sort((a, b) => new Date(b) - new Date(a));
-    
-    if (recordDates.length === 0) return 0;
-    
-    // 計算從今天往回的連續天數
-    let streakDays = 0;
-    const todayStr = today;
-    
-    // 檢查是否今天有記錄
-    if (recordDates.includes(todayStr)) {
-      streakDays = 1;
-      
-      // 往前檢查連續性
-      const todayDate = new Date(today);
-      for (let i = 1; i < recordDates.length; i++) {
-        const prevDay = new Date(todayDate);
-        prevDay.setDate(todayDate.getDate() - i);
-        const prevDayStr = prevDay.toDateString();
-        
-        if (recordDates.includes(prevDayStr)) {
-          streakDays++;
-        } else {
-          break;
-        }
-      }
-    }
-    
-    return streakDays;
-  };
-  
-  const currentStreak = calculateStreak();
+  // 計算連續記錄天數 - 直接使用 gameData 中的數據
+  const currentStreak = gameData?.streaks?.current_days || 0;
   const maxStreak = 30;
-  
-  // 更新遊戲數據中的連勝記錄
-  React.useEffect(() => {
-    if (onUpdate && currentStreak !== gameData?.streaks?.current_days) {
-      const updatedGameData = {
-        ...gameData,
-        streaks: {
-          ...gameData?.streaks,
-          current_days: currentStreak,
-          best_days: Math.max(currentStreak, gameData?.streaks?.best_days || 0)
-        }
-      };
-      onUpdate(updatedGameData);
-    }
-  }, [currentStreak, gameData, onUpdate]);
   
   const getFlameEmoji = (days) => {
     if (days === 0) return '💀';
