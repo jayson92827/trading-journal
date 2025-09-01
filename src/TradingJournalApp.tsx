@@ -4,10 +4,303 @@ import {
   FileText, Search, Filter, Eye, EyeOff, Trash2, Edit3, Upload, Download, 
   DollarSign, RefreshCw, Image, X, Star, Trophy, Crown, Zap, Shield, 
   Award, Users, BookOpen, Brain, Heart, Flame, Lock, Gift, Timer,
-  Sparkles, Medal, Sword, Compass, Diamond, Gem, Rocket
+  Sparkles, Medal, Sword, Compass, Diamond, Gem, Rocket, Mail, LogIn, LogOut
 } from 'lucide-react';
 
-// 表單字段組件
+// 登入組件
+const LoginSystem = ({ onLogin }) => {
+  const [loginMode, setLoginMode] = useState('email'); // 'email' 或 'register'
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    name: ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    // 模擬登入延遲
+    setTimeout(() => {
+      const userData = {
+        name: formData.name || formData.email.split('@')[0],
+        email: formData.email,
+        id: Date.now(),
+        loginTime: new Date().toISOString()
+      };
+      
+      // 儲存用戶資料
+      localStorage.setItem('trading-journal-user', JSON.stringify(userData));
+      onLogin(userData);
+      setLoading(false);
+    }, 1000);
+  };
+
+  const handleGoogleLogin = () => {
+    // 模擬Google登入
+    setLoading(true);
+    setTimeout(() => {
+      const userData = {
+        name: 'Google 用戶',
+        email: 'user@gmail.com',
+        id: Date.now(),
+        loginTime: new Date().toISOString(),
+        provider: 'google'
+      };
+      
+      localStorage.setItem('trading-journal-user', JSON.stringify(userData));
+      onLogin(userData);
+      setLoading(false);
+    }, 1500);
+  };
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #0f1419 0%, #1a2332 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px'
+    }}>
+      <div style={{
+        backgroundColor: colors.bg1,
+        borderRadius: '20px',
+        padding: '40px',
+        border: `2px solid ${colors.brand}30`,
+        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+        maxWidth: '400px',
+        width: '100%',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* 背景裝飾 */}
+        <div style={{
+          position: 'absolute',
+          top: '-50%',
+          left: '-50%',
+          width: '200%',
+          height: '200%',
+          background: 'radial-gradient(circle, rgba(64, 224, 208, 0.1) 0%, transparent 70%)',
+          animation: 'rotate 20s linear infinite'
+        }} />
+        
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          {/* Logo區域 */}
+          <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+            <div style={{
+              fontSize: '48px',
+              marginBottom: '12px',
+              background: 'linear-gradient(45deg, #40E0D0, #FF6B6B)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              color: 'transparent',
+              fontWeight: 'bold'
+            }}>
+              🎮
+            </div>
+            <h1 style={{
+              color: colors.txt0,
+              fontSize: '24px',
+              fontWeight: '700',
+              margin: '0 0 8px 0',
+              background: 'linear-gradient(45deg, #40E0D0, #FF6B6B)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              color: 'transparent'
+            }}>
+              遊戲化交易日記
+            </h1>
+            <p style={{
+              color: colors.txt2,
+              fontSize: '14px',
+              margin: 0
+            }}>
+              基於八角框架的完整交易記錄與分析平台
+            </p>
+          </div>
+
+          {/* 登入表單 */}
+          <form onSubmit={handleSubmit}>
+            {loginMode === 'register' && (
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  color: colors.txt0,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  marginBottom: '8px'
+                }}>
+                  姓名
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  required
+                  style={{
+                    ...inputStyle,
+                    border: `2px solid ${colors.brand}30`
+                  }}
+                  placeholder="請輸入姓名"
+                />
+              </div>
+            )}
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                color: colors.txt0,
+                fontSize: '14px',
+                fontWeight: '600',
+                marginBottom: '8px'
+              }}>
+                電子郵件
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                required
+                style={{
+                  ...inputStyle,
+                  border: `2px solid ${colors.brand}30`
+                }}
+                placeholder="請輸入電子郵件"
+              />
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                color: colors.txt0,
+                fontSize: '14px',
+                fontWeight: '600',
+                marginBottom: '8px'
+              }}>
+                密碼
+              </label>
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                required
+                style={{
+                  ...inputStyle,
+                  border: `2px solid ${colors.brand}30`
+                }}
+                placeholder="請輸入密碼"
+              />
+            </div>
+
+            {loginMode === 'register' && (
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{
+                  display: 'block',
+                  color: colors.txt0,
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  marginBottom: '8px'
+                }}>
+                  確認密碼
+                </label>
+                <input
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                  required
+                  style={{
+                    ...inputStyle,
+                    border: `2px solid ${colors.brand}30`
+                  }}
+                  placeholder="請再次輸入密碼"
+                />
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                ...buttonStyle,
+                width: '100%',
+                padding: '16px',
+                fontSize: '16px',
+                marginBottom: '16px',
+                opacity: loading ? 0.7 : 1,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              {loading ? <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <LogIn size={18} />}
+              {loading ? '處理中...' : (loginMode === 'register' ? '註冊' : '登入')}
+            </button>
+
+            {/* Google登入按鈕 */}
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              style={{
+                ...buttonStyle,
+                backgroundColor: '#DB4437',
+                width: '100%',
+                padding: '16px',
+                fontSize: '16px',
+                marginBottom: '20px',
+                opacity: loading ? 0.7 : 1,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <Mail size={18} />
+              使用 Google 登入
+            </button>
+
+            {/* 切換模式 */}
+            <div style={{ textAlign: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setLoginMode(loginMode === 'register' ? 'email' : 'register')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: colors.brand,
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
+                {loginMode === 'register' ? '已有帳號？立即登入' : '沒有帳號？立即註冊'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <style>
+          {`
+            @keyframes rotate {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+          `}
+        </style>
+      </div>
+    </div>
+  );
+};
 const FormField = ({ field, value, onChange }) => {
   const handleChange = (newValue) => {
     onChange(field.key, newValue);
@@ -169,6 +462,12 @@ const StatsDashboard = ({ trades, accountBalance, totalPL, gameData }) => {
 
 // 主應用組件
 const TradingJournalApp = () => {
+  // User authentication state
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('trading-journal-user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  
   const [currentView, setCurrentView] = useState('dashboard');
   const [trades, setTrades] = useState([]);
   const [editingTrade, setEditingTrade] = useState(null);
@@ -364,14 +663,59 @@ const TradingJournalApp = () => {
     localStorage.setItem('tradingJournalFields', JSON.stringify(newFields));
   };
 
+  // Authentication handlers
+  const handleLogin = (userData) => {
+    setUser(userData);
+    localStorage.setItem('trading-journal-user', JSON.stringify(userData));
+    
+    // Load user-specific data
+    const userKey = userData.email || userData.id;
+    const savedTrades = localStorage.getItem(`tradingJournalTrades_${userKey}`);
+    const savedGameData = localStorage.getItem(`tradingJournalGameData_${userKey}`);
+    const savedBalance = localStorage.getItem(`tradingJournalBalance_${userKey}`);
+    
+    if (savedTrades) {
+      const tradesData = JSON.parse(savedTrades);
+      setTrades(tradesData);
+      setTimeout(() => updateGameData(tradesData), 100);
+    }
+    if (savedGameData) {
+      setGameData({...defaultGameData, ...JSON.parse(savedGameData)});
+    }
+    if (savedBalance) {
+      setAccountBalance(parseFloat(savedBalance));
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('trading-journal-user');
+    // Reset to default state
+    setTrades([]);
+    setGameData(defaultGameData);
+    setAccountBalance(10000);
+    setCurrentView('dashboard');
+  };
+
+  // Get user-specific storage keys
+  const getUserStorageKey = (baseKey) => {
+    if (!user) return baseKey;
+    const userKey = user.email || user.id;
+    return `${baseKey}_${userKey}`;
+  };
+
   // 從記憶體載入數據
   useEffect(() => {
+    // Only load data if user is logged in
+    if (!user) return;
+    
     try {
-      const savedTrades = localStorage.getItem('tradingJournalTrades');
-      const savedFields = localStorage.getItem('tradingJournalFields');
-      const savedBalance = localStorage.getItem('tradingJournalBalance');
-      const savedGameData = localStorage.getItem('tradingJournalGameData');
-      const savedBaseAccount = localStorage.getItem('tradingJournalBaseAccount');
+      const userKey = user.email || user.id;
+      const savedTrades = localStorage.getItem(`tradingJournalTrades_${userKey}`);
+      const savedFields = localStorage.getItem('tradingJournalFields'); // Fields are shared across users
+      const savedBalance = localStorage.getItem(`tradingJournalBalance_${userKey}`);
+      const savedGameData = localStorage.getItem(`tradingJournalGameData_${userKey}`);
+      const savedBaseAccount = localStorage.getItem(`tradingJournalBaseAccount_${userKey}`);
       
       if (savedTrades) {
         const tradesData = JSON.parse(savedTrades);
@@ -387,7 +731,7 @@ const TradingJournalApp = () => {
         // 如果沒有保存的餘額但有基礎帳戶，則設定為基礎帳戶金額
         const baseAccount = parseFloat(savedBaseAccount);
         setAccountBalance(baseAccount);
-        localStorage.setItem('tradingJournalBalance', baseAccount.toString());
+        localStorage.setItem(`tradingJournalBalance_${userKey}`, baseAccount.toString());
       }
       if (savedGameData) {
         const loadedGameData = JSON.parse(savedGameData);
@@ -417,7 +761,7 @@ const TradingJournalApp = () => {
     } catch (error) {
       console.error('載入數據失敗:', error);
     }
-  }, []);
+  }, [user]);
 
   // 保存到記憶體
   const saveTrades = (newTrades) => {
@@ -457,19 +801,77 @@ const TradingJournalApp = () => {
 
   // 技能升級
   const handleSkillUpgrade = (skillId, level) => {
-    const skill = gameConfig.skills.find(s => s.id === skillId);
-    const levelInfo = skill.levels[level - 1];
+    console.log('Skill upgrade requested:', skillId, level);
     
-    if (gameData.xp >= levelInfo.xpCost) {
+    // 找到對應的技能分支
+    const skillBranches = [
+      {
+        id: 'risk',
+        name: '🛡️ 風控技能',
+        levels: [
+          { name: '基礎風控', xpCost: 100 },
+          { name: '資金管理', xpCost: 200 },
+          { name: '風險專家', xpCost: 300 }
+        ]
+      },
+      {
+        id: 'technical',
+        name: '📊 技術分析',
+        levels: [
+          { name: '基礎圖表', xpCost: 100 },
+          { name: '型態識別', xpCost: 200 },
+          { name: '進階分析', xpCost: 300 }
+        ]
+      },
+      {
+        id: 'psychology',
+        name: '🧠 心理控制',
+        levels: [
+          { name: '情緒認知', xpCost: 100 },
+          { name: '心理控制', xpCost: 200 },
+          { name: '禪定交易', xpCost: 300 }
+        ]
+      }
+    ];
+    
+    const skill = skillBranches.find(s => s.id === skillId);
+    if (!skill) {
+      console.error('技能不存在:', skillId);
+      return;
+    }
+    
+    const currentLevel = gameData.skills?.[skillId] || 1;
+    const targetLevel = level;
+    const levelIndex = targetLevel - 1;
+    
+    if (levelIndex >= skill.levels.length) {
+      console.error('等級超出範圍');
+      return;
+    }
+    
+    const levelInfo = skill.levels[levelIndex];
+    const requiredXP = levelInfo.xpCost;
+    
+    // 檢查是否可以升級
+    if (targetLevel > currentLevel && gameData.xp >= requiredXP) {
       const newGameData = {
         ...gameData,
-        xp: gameData.xp - levelInfo.xpCost,
+        xp: gameData.xp - requiredXP,
         skills: {
           ...gameData.skills,
-          [skillId]: level
+          [skillId]: targetLevel
         }
       };
-      saveGameData(newGameData);
+      
+      setGameData(newGameData);
+      localStorage.setItem('tradingJournalGameData', JSON.stringify(newGameData));
+      
+      // 顯示升級成功消息
+      setTimeout(() => {
+        alert(`🎉 技能升級成功！\n\n「${skill.name}」升級到 ${levelInfo.name}\n消耗 ${requiredXP} XP\n剩餘 XP: ${newGameData.xp}`);
+      }, 100);
+    } else {
+      console.log('無法升級:', { targetLevel, currentLevel, xp: gameData.xp, requiredXP });
     }
   };
 
@@ -493,14 +895,312 @@ const TradingJournalApp = () => {
       newTrades = [...trades, tradeData];
     }
     
-    // 保存交易並觸發更新
+    // 保存交易
     saveTrades(newTrades);
+    
+    // 計算並更新遊戲數據（包含連勝提醒）
+    setTimeout(() => {
+      updateGameDataWithNotifications(newTrades, !editingTrade);
+    }, 100);
     
     setEditingTrade(null);
     setFormData({});
     setCurrentView('dashboard'); // 修改：回到儀表板查看更新
     
     console.log('=== handleSaveTrade 完成 ===');
+  };
+  
+  // 更新遊戲數據並顯示提醒
+  const updateGameDataWithNotifications = (newTrades, isNewRecord = false) => {
+    if (!Array.isArray(newTrades)) return;
+    
+    const tradingTrades = newTrades.filter(trade => trade.type === 'trading' || !trade.type);
+    const nonTradingTrades = newTrades.filter(trade => trade.type === 'non-trading');
+    
+    // 計算經驗值
+    let totalXP = 0;
+    
+    // 基礎XP計算
+    totalXP += tradingTrades.length * 10; // 每筆交易記錄10XP
+    totalXP += nonTradingTrades.length * 5; // 每筆非交易日記錄5XP
+    
+    // 獎勵XP
+    tradingTrades.forEach(trade => {
+      if (trade.closed) totalXP += 15; // 完成交易
+      if (trade.strategyCompliant === '是 ✅') totalXP += 10; // 策略遵守
+      if (trade.riskControl === '是') totalXP += 15; // 風控紀律
+      if (trade.dailyReflection && trade.dailyReflection.length > 10) totalXP += 5; // 心得反思
+    });
+    
+    nonTradingTrades.forEach(trade => {
+      if (trade.dailyReflection && trade.dailyReflection.length > 10) totalXP += 5;
+      if (trade.learningActivity && trade.learningActivity.length > 0) totalXP += 8;
+    });
+    
+    // 計算連續記錄天數
+    const recordDates = [...new Set(newTrades.map(trade => {
+      const date = trade.date || trade.entryDate;
+      return date ? new Date(date).toDateString() : null;
+    }))].filter(Boolean).sort((a, b) => new Date(b) - new Date(a));
+    
+    const today = new Date().toDateString();
+    let recordStreak = 0;
+    
+    if (recordDates.includes(today)) {
+      recordStreak = 1;
+      const todayDate = new Date(today);
+      
+      for (let i = 1; i <= 30; i++) { // 最多檢查30天
+        const prevDay = new Date(todayDate);
+        prevDay.setDate(todayDate.getDate() - i);
+        const prevDayStr = prevDay.toDateString();
+        
+        if (recordDates.includes(prevDayStr)) {
+          recordStreak++;
+        } else {
+          break;
+        }
+      }
+    }
+    
+    const prevRecordStreak = gameData.streaks?.current_days || 0;
+    
+    // 計算交易連勝記錄
+    const closedTrades = tradingTrades.filter(trade => trade.closed).sort((a, b) => {
+      const dateA = new Date(a.exitDate || a.entryDate);
+      const dateB = new Date(b.exitDate || b.entryDate);
+      return dateA - dateB;
+    });
+    
+    let currentWinStreak = 0;
+    let bestWinStreak = gameData.streaks?.best_win || 0;
+    
+    // 從最新交易開始計算連勝
+    for (let i = closedTrades.length - 1; i >= 0; i--) {
+      if (closedTrades[i].profitLoss > 0) {
+        currentWinStreak++;
+      } else {
+        break;
+      }
+    }
+    
+    bestWinStreak = Math.max(bestWinStreak, currentWinStreak);
+    
+    const updatedGameData = {
+      ...gameData,
+      xp: totalXP,
+      streaks: {
+        current_win: currentWinStreak,
+        best_win: bestWinStreak,
+        current_days: recordStreak,
+        best_days: Math.max(gameData.streaks?.best_days || 0, recordStreak)
+      },
+      level: Math.floor(totalXP / 100) + 1
+    };
+    
+    setGameData(updatedGameData);
+    localStorage.setItem('tradingJournalGameData', JSON.stringify(updatedGameData));
+    
+    // 顯示提醒（僅限新記錄）
+    if (isNewRecord) {
+      setTimeout(() => {
+        let notifications = [];
+        
+        // 連續記錄天數提醒
+        if (recordStreak > prevRecordStreak && recordStreak > 1) {
+          const streakMessages = [
+            `🎉 太棒了！連續記錄 ${recordStreak} 天！`,
+            `🔥 火焰越燒越旺！你已經連續記錄 ${recordStreak} 天了！`,
+            `💪 堅持就是勝利！${recordStreak} 天連續記錄達成！`,
+            `🌟 專業交易者的紀律！${recordStreak} 天不間斷記錄！`,
+            `⚡ 驚人的毅力！連續 ${recordStreak} 天記錄交易日記！`,
+            `🚀 交易之路上的里程碑！${recordStreak} 天連續記錄！`
+          ];
+          
+          const randomMessage = streakMessages[Math.floor(Math.random() * streakMessages.length)];
+          
+          let additionalMessage = '';
+          let bonusXP = 0;
+          
+          if (recordStreak === 7) {
+            additionalMessage = '\n🎁 解鎖成就：一週達人！';
+            bonusXP = 50;
+          } else if (recordStreak === 14) {
+            additionalMessage = '\n🏆 解鎖成就：半月之星！';
+            bonusXP = 100;
+          } else if (recordStreak === 30) {
+            additionalMessage = '\n👑 解鎖成就：月度傳奇！';
+            bonusXP = 200;
+          }
+          
+          // 加入獎勵XP
+          if (bonusXP > 0) {
+            updatedGameData.xp += bonusXP;
+            setGameData(updatedGameData);
+            localStorage.setItem('tradingJournalGameData', JSON.stringify(updatedGameData));
+          }
+          
+          notifications.push({
+            message: randomMessage + additionalMessage + 
+              `\n\n🎯 當前狀態：\n• 總經驗值：${updatedGameData.xp} XP\n• 交易等級：Lv.${Math.floor(updatedGameData.xp / 100) + 1}\n• 最佳連續記錄：${Math.max(gameData.streaks?.best_days || 0, recordStreak)} 天` +
+              (bonusXP > 0 ? `\n• 獎勵 XP：+${bonusXP}` : ''),
+            delay: 500,
+            type: 'streak'
+          });
+        }
+        
+        // 交易連勝提醒
+        const prevWinStreak = gameData.streaks?.current_win || 0;
+        if (currentWinStreak > prevWinStreak && currentWinStreak >= 3) {
+          const winStreakMessages = [
+            `🎊 交易連勝！你已經連續獲利 ${currentWinStreak} 次！`,
+            `💎 完美執行！${currentWinStreak} 連勝的表現令人驚艷！`,
+            `⚡ 市場征服者！連續 ${currentWinStreak} 次盈利交易！`,
+            `🔥 熱血沸騰！${currentWinStreak} 連勝勢不可擋！`
+          ];
+          
+          const randomWinMessage = winStreakMessages[Math.floor(Math.random() * winStreakMessages.length)];
+          
+          let warningMessage = '';
+          if (currentWinStreak >= 5) {
+            warningMessage = '\n\n⚠️ 提醒：連勝時請保持冷靜，不要過度自信！';
+          } else if (currentWinStreak >= 7) {
+            warningMessage = '\n\n🚨 警告：極長連勝可能預示著風險，請謹慎交易！';
+          }
+          
+          notifications.push({
+            message: randomWinMessage + '\n\n保持良好的交易紀律，繼續加油！' + warningMessage,
+            delay: 1000,
+            type: 'win_streak'
+          });
+        }
+        
+        // 經驗值升級提醒
+        const prevLevel = Math.floor((gameData.xp || 0) / 100) + 1;
+        const newLevel = Math.floor(totalXP / 100) + 1;
+        if (newLevel > prevLevel) {
+          notifications.push({
+            message: `🎈 等級提升！\n恭喜達到 Lv.${newLevel}！\n\n• 新的技能點可用於升級技能樹\n• 解鎖更多進階功能\n• 交易者聲望持續提升`,
+            delay: 1500,
+            type: 'level_up'
+          });
+        }
+        
+        // 特殊成就提醒
+        if (recordStreak === 100) {
+          notifications.push({
+            message: '🌟 傳奇成就解鎖！\n\n百日記錄大師\n你已經連續記錄了100天的交易日記！\n這種毅力和紀律足以成為市場傳奇！\n\n🎁 特殊獎勵：500 XP',
+            delay: 2000,
+            type: 'legendary'
+          });
+        }
+        
+        // 顯示通知
+        notifications.forEach(notification => {
+          setTimeout(() => {
+            // 創建美化的彈窗
+            const isStreakNotification = notification.type === 'streak';
+            const isWinStreak = notification.type === 'win_streak';
+            const isLevelUp = notification.type === 'level_up';
+            
+            let bgColor, borderColor, icon;
+            
+            if (isStreakNotification) {
+              bgColor = 'linear-gradient(135deg, #FF6B35, #F7931E)';
+              borderColor = '#FF6B35';
+              icon = '🔥';
+            } else if (isWinStreak) {
+              bgColor = 'linear-gradient(135deg, #4ECDC4, #44A08D)';
+              borderColor = '#4ECDC4';
+              icon = '🎊';
+            } else if (isLevelUp) {
+              bgColor = 'linear-gradient(135deg, #FFD700, #FFA500)';
+              borderColor = '#FFD700';
+              icon = '🎈';
+            } else {
+              bgColor = 'linear-gradient(135deg, #8B5CF6, #A855F7)';
+              borderColor = '#8B5CF6';
+              icon = '🌟';
+            }
+            
+            // 使用更優雅的提醒方式
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0, 0, 0, 0.7);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              z-index: 9999;
+              animation: fadeIn 0.3s ease;
+            `;
+            
+            const popup = document.createElement('div');
+            popup.style.cssText = `
+              background: ${bgColor};
+              border: 3px solid ${borderColor};
+              border-radius: 20px;
+              padding: 30px;
+              max-width: 400px;
+              text-align: center;
+              color: white;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+              animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            `;
+            
+            popup.innerHTML = `
+              <div style="font-size: 48px; margin-bottom: 16px;">${icon}</div>
+              <div style="white-space: pre-line; font-size: 16px; line-height: 1.5; font-weight: 600;">
+                ${notification.message}
+              </div>
+              <button onclick="this.closest('div[style*=\"position: fixed\"]').remove()" 
+                style="margin-top: 20px; padding: 12px 24px; background: rgba(255,255,255,0.2); 
+                border: 2px solid rgba(255,255,255,0.3); border-radius: 12px; color: white; 
+                font-weight: 700; cursor: pointer; font-size: 14px;">
+                太棒了！
+              </button>
+            `;
+            
+            modal.appendChild(popup);
+            document.body.appendChild(modal);
+            
+            // 添加動畫樣式
+            const style = document.createElement('style');
+            style.textContent = `
+              @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+              }
+              @keyframes popIn {
+                from { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+                to { transform: scale(1) rotate(0deg); opacity: 1; }
+              }
+            `;
+            document.head.appendChild(style);
+            
+            // 點擊背景關閉
+            modal.onclick = (e) => {
+              if (e.target === modal) {
+                modal.remove();
+              }
+            };
+            
+            // 5秒後自動關閉
+            setTimeout(() => {
+              if (modal.parentNode) {
+                modal.remove();
+              }
+            }, 5000);
+            
+          }, notification.delay);
+        });
+      }, 200);
+    }
   };
 
   // 刪除交易 - 測試成功版本
@@ -682,8 +1382,12 @@ const TradingJournalApp = () => {
     );
   };
 
-  // 渲染內容
   const renderContent = () => {
+    // 如果沒有登錄用戶，顯示登錄界面
+    if (!user) {
+      return <LoginSystem onLogin={handleLogin} />;
+    }
+    
     switch (currentView) {
       case 'dashboard':
         return (
@@ -1034,7 +1738,18 @@ const TradingJournalApp = () => {
           <div>
             <h2 style={{color: colors.txt0, marginBottom: '32px', fontSize: '32px', fontWeight: '700'}}>每日任務</h2>
             <DailyQuests trades={trades} gameData={gameData} onComplete={(xp, title) => {
-              console.log(`任務完成：${title}，獲得 ${xp} XP`);
+              // 任務完成處理
+              const newGameData = {
+                ...gameData,
+                xp: (gameData.xp || 0) + xp
+              };
+              setGameData(newGameData);
+              localStorage.setItem('tradingJournalGameData', JSON.stringify(newGameData));
+              
+              // 顯示完成提醒
+              setTimeout(() => {
+                alert(`🎉 任務完成！\n\n「${title}」\n獲得 ${xp} XP\n總 XP: ${newGameData.xp}`);
+              }, 100);
             }} />
           </div>
         );
@@ -1871,22 +2586,75 @@ const TradingJournalApp = () => {
     }}>
       <div style={{maxWidth: '1400px', margin: '0 auto'}}>
         <header style={{marginBottom: '40px', textAlign: 'center'}}>
-          <h1 style={{
-            color: colors.brand,
-            fontSize: '48px',
-            fontWeight: '800',
-            margin: '0 0 12px 0',
-            textShadow: `0 0 30px rgba(0, 212, 255, 0.6)`,
-            background: `linear-gradient(135deg, ${colors.brand}, ${colors.purple})`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '20px'
           }}>
-            🎮 遊戲化交易日記
-          </h1>
-          <p style={{color: colors.txt1, margin: 0, fontSize: '18px', fontWeight: '500'}}>
-            基於八角框架的完整交易記錄、分析與成長平台
-          </p>
+            <div>
+              <h1 style={{
+                color: colors.brand,
+                fontSize: '48px',
+                fontWeight: '800',
+                margin: '0 0 12px 0',
+                textShadow: `0 0 30px rgba(0, 212, 255, 0.6)`,
+                background: `linear-gradient(135deg, ${colors.brand}, ${colors.purple})`,
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
+                🎮 遊戲化交易日記
+              </h1>
+              <p style={{color: colors.txt1, margin: 0, fontSize: '18px', fontWeight: '500'}}>
+                基於八角框架的完整交易記錄、分析與成長平台
+              </p>
+            </div>
+            
+            {/* 用戶信息和登出 */}
+            {user && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                backgroundColor: colors.bg1,
+                padding: '12px 20px',
+                borderRadius: '16px',
+                border: `2px solid ${colors.brand}30`
+              }}>
+                <div style={{textAlign: 'right'}}>
+                  <div style={{
+                    color: colors.txt0,
+                    fontSize: '16px',
+                    fontWeight: '700'
+                  }}>
+                    歡迎回來，{user.name}
+                  </div>
+                  <div style={{
+                    color: colors.txt2,
+                    fontSize: '12px'
+                  }}>
+                    {user.email}
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  style={{
+                    ...buttonStyle,
+                    backgroundColor: colors.err,
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <LogOut size={16} />
+                  登出
+                </button>
+              </div>
+            )}
+          </div>
         </header>
         
         {renderNavigation()}
@@ -4205,122 +4973,319 @@ const AchievementBadge = ({ achievement, earned = false, progress = 0 }) => {
   );
 };
 
-// 技能樹組件
+// 技能樹組件 - 修正版本，移除對不存在gameConfig的依賴
 const SkillTree = ({ gameData, onUpgrade }) => {
+  // 直接在組件內定義技能配置
+  const skillBranches = [
+    {
+      id: 'risk',
+      name: '🛡️ 風控技能',
+      icon: '🛡️',
+      description: '資金管理與風險控制能力',
+      levels: [
+        { name: '基礎風控', description: '學會設定停損', cost: 1, benefits: ['停損設定提醒', '風險計算器'], xpCost: 100 },
+        { name: '資金管理', description: '掌握倉位控制', cost: 2, benefits: ['倉位計算器', '資金分配建議'], xpCost: 200 },
+        { name: '風險專家', description: '進階風控策略', cost: 3, benefits: ['多策略組合', '動態風控'], xpCost: 300 }
+      ]
+    },
+    {
+      id: 'technical',
+      name: '📊 技術分析',
+      icon: '📊',
+      description: '圖表分析與型態識別能力',
+      levels: [
+        { name: '基礎圖表', description: '認識K線與趨勢', cost: 1, benefits: ['型態識別提示', '趨勢分析'], xpCost: 100 },
+        { name: '型態識別', description: '掌握技術型態', cost: 2, benefits: ['進階型態庫', '自動識別'], xpCost: 200 },
+        { name: '進階分析', description: '綜合技術指標', cost: 3, benefits: ['多指標組合', '量價分析'], xpCost: 300 }
+      ]
+    },
+    {
+      id: 'psychology',
+      name: '🧠 心理控制',
+      icon: '🧠',
+      description: '情緒管理與交易心理',
+      levels: [
+        { name: '情緒認知', description: '了解交易情緒', cost: 1, benefits: ['情緒追蹤', '心態提醒'], xpCost: 100 },
+        { name: '心理控制', description: '管理交易情緒', cost: 2, benefits: ['冥想提醒', '情緒分析'], xpCost: 200 },
+        { name: '禪定交易', description: '達到心流狀態', cost: 3, benefits: ['完美心態', '無情緒交易'], xpCost: 300 }
+      ]
+    }
+  ];
+  
+  const currentXP = gameData?.xp || 0;
+  
+  const handleSkillUpgrade = (skillId, levelIndex) => {
+    const skill = skillBranches.find(s => s.id === skillId);
+    const level = skill.levels[levelIndex];
+    const currentSkillLevel = gameData.skills?.[skillId] || 0;
+    
+    // 檢查是否可以升級
+    if (levelIndex !== currentSkillLevel || currentXP < level.xpCost) {
+      return;
+    }
+    
+    // 升級技能
+    const updatedGameData = {
+      ...gameData,
+      skills: {
+        ...gameData.skills,
+        [skillId]: currentSkillLevel + 1
+      },
+      xp: currentXP - level.xpCost
+    };
+    
+    onUpgrade?.(updatedGameData);
+    
+    // 顯示升級通知
+    setTimeout(() => {
+      alert(`🎉 技能升級成功！\n「${skill.name}」達到 ${level.name} 等級\n\n解鎖效果：\n${level.benefits.map(b => `• ${b}`).join('\n')}`);
+    }, 100);
+  };
+  
   return (
-    <div style={cardStyle}>
-      <h3 style={{
-        color: colors.txt0,
-        marginBottom: '24px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        fontSize: '20px'
-      }}>
-        <Brain size={20} />
-        技能樹
-      </h3>
+    <div style={{
+      ...cardStyle,
+      background: `linear-gradient(135deg, ${colors.brand}15, ${colors.bg1})`,
+      border: `2px solid ${colors.brand}30`
+    }}>
+      {/* 頭部信息 */}
+      <div style={{marginBottom: '24px'}}>
+        <h3 style={{
+          color: colors.txt0,
+          marginBottom: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '20px',
+          fontWeight: '700'
+        }}>
+          <Brain size={20} />
+          技能樹
+          <span style={{
+            backgroundColor: colors.brand,
+            color: colors.bg0,
+            padding: '4px 8px',
+            borderRadius: '12px',
+            fontSize: '11px',
+            fontWeight: '700'
+          }}>
+            可升級
+          </span>
+        </h3>
+        
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '12px 16px',
+          backgroundColor: colors.bg0,
+          borderRadius: '12px',
+          border: `2px solid ${colors.gold}30`
+        }}>
+          <div>
+            <div style={{color: colors.txt0, fontSize: '14px', fontWeight: '600'}}>
+              總經驗值：{currentXP} XP
+            </div>
+            <div style={{color: colors.txt2, fontSize: '12px'}}>
+              通過完成交易記錄、遵守策略獲得XP
+            </div>
+          </div>
+          <div style={{
+            color: colors.gold,
+            fontSize: '24px',
+            fontWeight: '700'
+          }}>
+            ⚡ {currentXP}
+          </div>
+        </div>
+      </div>
       
+      {/* 技能分支 */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
         gap: '20px'
       }}>
-        {gameConfig.skills.map(skill => {
-          const currentLevel = gameData.skills[skill.id] || 1;
-          const maxLevel = skill.levels.length;
+        {skillBranches.map(branch => {
+          const currentLevel = gameData.skills?.[branch.id] || 0;
           
           return (
-            <div key={skill.id} style={{
+            <div key={branch.id} style={{
               padding: '20px',
               backgroundColor: colors.bg0,
               borderRadius: '16px',
-              border: `2px solid ${colors.brand}40`
+              border: `2px solid ${colors.brand}40`,
+              position: 'relative'
             }}>
+              {/* 分支標題 */}
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
                 marginBottom: '16px'
               }}>
-                <div style={{ fontSize: '24px' }}>{skill.icon}</div>
+                <div style={{ fontSize: '32px' }}>{branch.icon}</div>
                 <div>
                   <h4 style={{
                     color: colors.txt0,
-                    margin: 0,
+                    margin: '0 0 4px 0',
                     fontSize: '16px',
                     fontWeight: '700'
                   }}>
-                    {skill.name}
+                    {branch.name}
                   </h4>
                   <div style={{
                     color: colors.txt2,
-                    fontSize: '12px'
+                    fontSize: '12px',
+                    lineHeight: '1.3'
                   }}>
-                    等級 {currentLevel}/{maxLevel}
+                    {branch.description}
+                  </div>
+                  <div style={{
+                    color: colors.brand,
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    marginTop: '2px'
+                  }}>
+                    等級 {currentLevel}/{branch.levels.length}
                   </div>
                 </div>
               </div>
               
-              <div style={{ marginBottom: '16px' }}>
-                {skill.levels.map((levelInfo, index) => {
-                  const level = index + 1;
-                  const isUnlocked = level <= currentLevel;
-                  const canUpgrade = level === currentLevel + 1 && gameData.xp >= levelInfo.xpCost;
+              {/* 技能等級 */}
+              <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                {branch.levels.map((level, index) => {
+                  const levelNumber = index + 1;
+                  const isUnlocked = levelNumber <= currentLevel;
+                  const canUpgrade = levelNumber === currentLevel + 1 && currentXP >= level.xpCost;
+                  const isLocked = levelNumber > currentLevel + 1;
                   
                   return (
-                    <div key={level} style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '8px',
-                      borderRadius: '8px',
-                      backgroundColor: isUnlocked ? colors.bg2 : 'transparent',
-                      border: `1px solid ${isUnlocked ? colors.brand : colors.txt2}40`,
-                      marginBottom: '8px',
-                      opacity: isUnlocked ? 1 : 0.6
-                    }}>
+                    <div key={index} style={{
+                      padding: '16px',
+                      borderRadius: '12px',
+                      border: `2px solid ${
+                        isUnlocked ? colors.ok + '50' : 
+                        canUpgrade ? colors.gold + '70' : 
+                        colors.txt2 + '30'
+                      }`,
+                      backgroundColor: isUnlocked ? colors.ok + '10' : canUpgrade ? colors.gold + '10' : colors.bg2,
+                      cursor: canUpgrade ? 'pointer' : 'default',
+                      transition: 'all 0.3s ease',
+                      position: 'relative',
+                      opacity: isLocked ? 0.5 : 1
+                    }}
+                    onClick={() => canUpgrade && handleSkillUpgrade(branch.id, index)}
+                    onMouseEnter={(e) => {
+                      if (canUpgrade) {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = `0 4px 12px ${colors.gold}40`;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                    >
+                      {/* 等級標識 */}
                       <div style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
                         width: '24px',
                         height: '24px',
                         borderRadius: '50%',
-                        backgroundColor: isUnlocked ? colors.brand : colors.txt2,
+                        backgroundColor: isUnlocked ? colors.ok : canUpgrade ? colors.gold : colors.txt2,
+                        color: colors.bg0,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: '12px',
-                        color: colors.bg0,
                         fontWeight: '700'
                       }}>
-                        {level}
+                        {isUnlocked ? '✓' : levelNumber}
                       </div>
-                      <div style={{ flex: 1 }}>
+                      
+                      <div style={{marginBottom: '8px'}}>
                         <div style={{
-                          color: isUnlocked ? colors.txt0 : colors.txt2,
+                          color: isUnlocked ? colors.ok : canUpgrade ? colors.gold : colors.txt1,
                           fontSize: '14px',
-                          fontWeight: '600'
+                          fontWeight: '700',
+                          marginBottom: '4px'
                         }}>
-                          {levelInfo.name}
+                          {level.name}
                         </div>
                         <div style={{
                           color: colors.txt2,
-                          fontSize: '12px'
+                          fontSize: '12px',
+                          lineHeight: '1.3',
+                          marginBottom: '8px'
                         }}>
-                          {levelInfo.benefit}
+                          {level.description}
                         </div>
                       </div>
-                      {canUpgrade && (
-                        <button
-                          onClick={() => onUpgrade(skill.id, level)}
-                          style={{
-                            ...buttonStyle,
+                      
+                      {/* 效果列表 */}
+                      <div style={{marginBottom: '12px'}}>
+                        <div style={{
+                          color: colors.txt2,
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          marginBottom: '4px'
+                        }}>
+                          解鎖效果：
+                        </div>
+                        {level.benefits.map((benefit, idx) => (
+                          <div key={idx} style={{
+                            color: isUnlocked ? colors.ok : colors.txt2,
+                            fontSize: '10px',
+                            lineHeight: '1.2',
+                            marginLeft: '8px',
+                            opacity: isUnlocked ? 1 : 0.7
+                          }}>
+                            • {benefit}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* 升級按鈕/成本 */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <div style={{
+                          color: colors.gold,
+                          fontSize: '12px',
+                          fontWeight: '700'
+                        }}>
+                          需要：{level.xpCost} XP
+                        </div>
+                        
+                        {canUpgrade && (
+                          <div style={{
+                            backgroundColor: colors.gold,
+                            color: colors.bg0,
                             padding: '6px 12px',
-                            fontSize: '12px'
-                          }}
-                        >
-                          升級 ({levelInfo.xpCost} XP)
-                        </button>
-                      )}
+                            borderRadius: '20px',
+                            fontSize: '11px',
+                            fontWeight: '700',
+                            cursor: 'pointer'
+                          }}>
+                            升級 ⚡
+                          </div>
+                        )}
+                        
+                        {isUnlocked && (
+                          <div style={{
+                            color: colors.ok,
+                            fontSize: '11px',
+                            fontWeight: '700'
+                          }}>
+                            已解鎖 ✓
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -4329,78 +5294,204 @@ const SkillTree = ({ gameData, onUpgrade }) => {
           );
         })}
       </div>
+      
+      {/* 提示信息 */}
+      {currentXP < 100 && (
+        <div style={{
+          marginTop: '20px',
+          padding: '16px',
+          backgroundColor: colors.brand + '20',
+          borderRadius: '12px',
+          border: `2px solid ${colors.brand}30`,
+          textAlign: 'center'
+        }}>
+          <div style={{color: colors.brand, fontSize: '14px', fontWeight: '700', marginBottom: '4px'}}>
+            💡 如何獲得經驗值？
+          </div>
+          <div style={{color: colors.txt2, fontSize: '12px'}}>
+            完成交易記錄 (+10 XP)、遵守策略 (+10 XP)、執行風控 (+15 XP)、撰寫反思 (+5 XP)
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 // 每日任務組件
-const DailyQuests = ({ onComplete }) => {
-  const [quests] = useState([
+const DailyQuests = ({ trades, gameData, onComplete }) => {
+  const today = new Date().toDateString();
+  
+  // 計算今日任務進度
+  const todayTrades = Array.isArray(trades) ? trades.filter(trade => {
+    const tradeDate = new Date(trade.date || trade.entryDate).toDateString();
+    return tradeDate === today;
+  }) : [];
+  
+  const todayClosedTrades = todayTrades.filter(trade => trade.closed);
+  const todayReflections = todayTrades.filter(trade => 
+    trade.dailyReflection && trade.dailyReflection.length > 10
+  );
+  
+  // 檢查任務是否已完成（防止重複完成）
+  const completedToday = gameData.dailyQuestsCompleted?.includes(today) || false;
+  
+  const quests = [
     {
       id: 'daily_record',
       title: '記錄一筆交易',
-      desc: '今天記錄至少一筆交易',
+      desc: '今天記錄至少一筆交易（交易日或非交易日）',
       reward: 20,
-      progress: 0,
+      progress: todayTrades.length,
       target: 1,
-      icon: '📝'
+      icon: '📝',
+      completed: todayTrades.length >= 1
     },
     {
-      id: 'review_trades',
-      title: '檢視交易記錄',
-      desc: '檢視並分析過去的交易',
-      reward: 15,
-      progress: 0,
-      target: 1,
-      icon: '🔍'
-    },
-    {
-      id: 'plan_tomorrow',
-      title: '制定明日計劃',
-      desc: '為明天的交易制定計劃',
+      id: 'complete_trade',
+      title: '完成一筆交易',
+      desc: '今天完成至少一筆交易（設定為已結束）',
       reward: 25,
-      progress: 0,
+      progress: todayClosedTrades.length,
       target: 1,
-      icon: '📋'
+      icon: '✅',
+      completed: todayClosedTrades.length >= 1
+    },
+    {
+      id: 'daily_reflection',
+      title: '撰寫交易反思',
+      desc: '為今天的記錄撰寫詳細心得（至少10字）',
+      reward: 15,
+      progress: todayReflections.length,
+      target: 1,
+      icon: '🤔',
+      completed: todayReflections.length >= 1
+    },
+    {
+      id: 'streak_maintain',
+      title: '維持記錄連擊',
+      desc: '保持連續記錄的火焰不滅',
+      reward: 10,
+      progress: gameData.streaks?.current_days >= 1 ? 1 : 0,
+      target: 1,
+      icon: '🔥',
+      completed: gameData.streaks?.current_days >= 1
     }
-  ]);
+  ];
+  
+  // 處理任務完成
+  const handleCompleteQuest = (quest) => {
+    if (quest.completed && !completedToday && onComplete) {
+      // 標記今日任務已完成
+      const newGameData = {
+        ...gameData,
+        dailyQuestsCompleted: [...(gameData.dailyQuestsCompleted || []), today]
+      };
+      
+      onComplete(quest.reward, quest.title);
+      
+      // 保存任務完成狀態
+      setTimeout(() => {
+        localStorage.setItem('tradingJournalGameData', JSON.stringify(newGameData));
+      }, 100);
+    }
+  };
+  
+  const totalCompleted = quests.filter(q => q.completed).length;
+  const allCompleted = totalCompleted === quests.length;
 
   return (
     <div style={cardStyle}>
-      <h3 style={{
-        color: colors.txt0,
-        marginBottom: '20px',
+      <div style={{
         display: 'flex',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        gap: '8px'
+        marginBottom: '20px'
       }}>
-        <Target size={20} />
-        每日任務
-        <div style={{
-          backgroundColor: colors.warn,
+        <h3 style={{
           color: colors.txt0,
-          padding: '4px 8px',
-          borderRadius: '12px',
-          fontSize: '12px',
+          margin: 0,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          fontSize: '20px',
           fontWeight: '700'
         }}>
-          23:59
+          <Target size={20} />
+          每日任務
+          {allCompleted && (
+            <span style={{
+              backgroundColor: colors.gold,
+              color: colors.bg0,
+              padding: '4px 8px',
+              borderRadius: '12px',
+              fontSize: '12px',
+              fontWeight: '700'
+            }}>
+              全部完成！
+            </span>
+          )}
+        </h3>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <div style={{
+            color: colors.brand,
+            fontSize: '14px',
+            fontWeight: '600'
+          }}>
+            進度: {totalCompleted}/{quests.length}
+          </div>
+          <div style={{
+            backgroundColor: colors.warn,
+            color: colors.txt0,
+            padding: '4px 8px',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: '700'
+          }}>
+            {new Date().toLocaleDateString('zh-TW')}
+          </div>
         </div>
-      </h3>
+      </div>
       
       <div style={{display: 'grid', gap: '16px'}}>
         {quests.map(quest => {
-          const isCompleted = quest.progress >= quest.target;
-          const progressPercent = (quest.progress / quest.target) * 100;
+          const progressPercent = Math.min((quest.progress / quest.target) * 100, 100);
           
           return (
             <div key={quest.id} style={{
               padding: '16px',
               backgroundColor: colors.bg0,
               borderRadius: '12px',
-              border: `2px solid ${isCompleted ? colors.ok : colors.brand}40`,
-              opacity: isCompleted ? 0.7 : 1
-            }}>
+              border: `2px solid ${quest.completed ? colors.ok : colors.brand}40`,
+              opacity: quest.completed ? 0.9 : 1,
+              position: 'relative',
+              cursor: quest.completed && !completedToday ? 'pointer' : 'default'
+            }}
+            onClick={() => handleCompleteQuest(quest)}
+            >
+              {quest.completed && (
+                <div style={{
+                  position: 'absolute',
+                  top: '8px',
+                  right: '8px',
+                  backgroundColor: colors.ok,
+                  color: colors.txt0,
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: '700'
+                }}>
+                  ✓
+                </div>
+              )}
+              
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -4420,13 +5511,14 @@ const DailyQuests = ({ onComplete }) => {
                   <p style={{
                     color: colors.txt2,
                     margin: 0,
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    lineHeight: '1.4'
                   }}>
                     {quest.desc}
                   </p>
                 </div>
                 <div style={{
-                  backgroundColor: colors.gold,
+                  backgroundColor: quest.completed ? colors.ok : colors.gold,
                   color: colors.bg0,
                   padding: '6px 12px',
                   borderRadius: '20px',
@@ -4446,15 +5538,16 @@ const DailyQuests = ({ onComplete }) => {
                 borderRadius: '8px',
                 padding: '4px',
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                marginBottom: '8px'
               }}>
                 <div style={{
-                  background: isCompleted 
+                  background: quest.completed 
                     ? `linear-gradient(90deg, ${colors.ok}, ${colors.lime})` 
                     : `linear-gradient(90deg, ${colors.brand}, ${colors.cyan})`,
                   height: '8px',
                   borderRadius: '6px',
-                  width: `${Math.min(progressPercent, 100)}%`,
+                  width: `${progressPercent}%`,
                   transition: 'width 0.5s ease'
                 }} />
               </div>
@@ -4462,8 +5555,7 @@ const DailyQuests = ({ onComplete }) => {
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center',
-                marginTop: '8px'
+                alignItems: 'center'
               }}>
                 <span style={{
                   color: colors.txt2,
@@ -4471,13 +5563,13 @@ const DailyQuests = ({ onComplete }) => {
                 }}>
                   進度: {quest.progress}/{quest.target}
                 </span>
-                {isCompleted && (
+                {quest.completed && (
                   <span style={{
                     color: colors.ok,
                     fontSize: '12px',
                     fontWeight: '700'
                   }}>
-                    ✅ 已完成
+                    {!completedToday ? '點擊領取獎勵' : '✅ 已完成'}
                   </span>
                 )}
               </div>
@@ -4485,6 +5577,43 @@ const DailyQuests = ({ onComplete }) => {
           );
         })}
       </div>
+      
+      {/* 每日總結 */}
+      {allCompleted && (
+        <div style={{
+          marginTop: '20px',
+          padding: '16px',
+          backgroundColor: colors.gold + '20',
+          borderRadius: '12px',
+          border: `2px solid ${colors.gold}50`,
+          textAlign: 'center'
+        }}>
+          <div style={{color: colors.gold, fontSize: '16px', fontWeight: '700', marginBottom: '4px'}}>
+            🎉 今日任務全部完成！
+          </div>
+          <div style={{color: colors.txt2, fontSize: '14px'}}>
+            總獲得 {quests.reduce((sum, q) => sum + q.reward, 0)} XP • 繼續保持這種優秀的交易紀律！
+          </div>
+        </div>
+      )}
+      
+      {!allCompleted && todayTrades.length === 0 && (
+        <div style={{
+          marginTop: '20px',
+          padding: '16px',
+          backgroundColor: colors.brand + '20',
+          borderRadius: '12px',
+          border: `2px solid ${colors.brand}30`,
+          textAlign: 'center'
+        }}>
+          <div style={{color: colors.brand, fontSize: '14px', fontWeight: '700', marginBottom: '4px'}}>
+            💡 開始今天的交易記錄
+          </div>
+          <div style={{color: colors.txt2, fontSize: '12px'}}>
+            記錄一筆交易或非交易日來開始完成今天的任務
+          </div>
+        </div>
+      )}
     </div>
   );
 };
