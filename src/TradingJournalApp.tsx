@@ -7,448 +7,6 @@ import {
   Sparkles, Medal, Sword, Compass, Diamond, Gem, Rocket
 } from 'lucide-react';
 
-// 顏色配置
-const colors = {
-  bg0: '#0A0E1A',
-  bg1: '#0F1419',
-  bg2: '#1A1F2E',
-  bg3: '#242938',
-  txt0: '#E6EDF3',
-  txt1: '#9FB0C3',
-  txt2: '#6B7280',
-  brand: '#00D4FF',
-  brandDark: '#0099CC',
-  gold: '#FFD700',
-  silver: '#C0C0C0',
-  bronze: '#CD7F32',
-  legendary: '#FF6B35',
-  epic: '#9D4EDD',
-  rare: '#4CC9F0',
-  common: '#7209B7',
-  ok: '#39D98A',
-  warn: '#F72585',
-  err: '#E63946',
-  purple: '#8B5CF6',
-  blue: '#4A90E2',
-  orange: '#FF8A00',
-  pink: '#FF69B4',
-  cyan: '#00FFF0',
-  lime: '#32FF32',
-  border: 'rgba(0, 212, 255, 0.3)'
-};
-
-// 組件樣式
-const cardStyle = {
-  backgroundColor: colors.bg1,
-  border: `1px solid ${colors.border}`,
-  borderRadius: '20px',
-  padding: '24px',
-  backdropFilter: 'blur(20px)',
-  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-  position: 'relative',
-  overflow: 'hidden',
-  marginBottom: '24px'
-};
-
-const glassCardStyle = {
-  ...cardStyle,
-  background: `linear-gradient(135deg, 
-    rgba(0, 212, 255, 0.1) 0%, 
-    rgba(139, 92, 246, 0.1) 100%
-  )`,
-  border: `1px solid rgba(255, 255, 255, 0.1)`,
-};
-
-const buttonStyle = {
-  backgroundColor: colors.brand,
-  color: colors.bg0,
-  border: 'none',
-  borderRadius: '16px',
-  padding: '12px 24px',
-  fontWeight: '700',
-  cursor: 'pointer',
-  transition: 'all 0.3s ease',
-  boxShadow: `0 0 30px rgba(0, 212, 255, 0.3)`,
-  fontSize: '14px',
-  position: 'relative',
-  overflow: 'hidden'
-};
-
-const inputStyle = {
-  backgroundColor: colors.bg0,
-  border: `2px solid ${colors.border}`,
-  borderRadius: '12px',
-  padding: '12px 16px',
-  color: colors.txt0,
-  fontSize: '14px',
-  outline: 'none',
-  transition: 'all 0.3s ease',
-  width: '100%'
-};
-
-// 完整的交易對列表
-const tradingPairs = {
-  外匯: ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDCAD', 'AUDJPY', 'AUDNZD', 'CADJPY', 'EURCAD', 'EURJPY', 'GBPJPY', 'GBPNZD', 'NZDCAD', 'NZDCHF', 'NZDJPY', 'AUDUSD', 'EURNZD', 'GBPAUD', 'GBPCHF', 'NZDUSD', 'USDCAD', 'AUDCHF', 'CADCHF', 'CHFJPY', 'EURAUD', 'EURGBP', 'USDCHF'],
-  加密貨幣: ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'ADAUSDT', 'DOTUSDT', 'LINKUSDT', 'LTCUSDT', 'BNBUSDT', 'MATICUSDT', 'AVAXUSDT', 'ATOMUSDT'],
-  商品: ['XAUUSD', 'XAGUSD', 'DXY', 'USOIL', 'UKOIL', 'US30', 'NAS100', 'SPX500', 'GER40', 'UK100']
-};
-
-const patterns = [
-  '旗型', 'Bull Flag', 'Bear Flag', 'Flat Flag',
-  '三角形', 'Symmetrical Triangle', 'Expanding Triangle', 'Ascending Triangle', 'Descending Triangle',
-  '通道', 'Ascending Channel', 'Descending Channel', 'Parallel Channel',
-  '楔形', 'Rising Wedge', 'Falling Wedge',
-  '經典型態', 'Head & Shoulders', 'Inverse Head & Shoulders', 'Double Top', 'Double Bottom', 'Triple Top', 'Triple Bottom',
-  '其他', 'Cup & Handle', 'Rectangle', 'Pennant', 'Diamond'
-];
-
-// 預設字段配置
-const defaultFields = [
-  { key: 'title', label: '交易標題', type: 'text', visible: true, required: true },
-  { key: 'pair', label: '交易對象', type: 'trading-pair-select', visible: true },
-  { key: 'direction', label: '交易方向', type: 'select', options: ['做多 (Long)', '做空 (Short)'], visible: true },
-  { key: 'entryDate', label: '進場日期', type: 'datetime-local', visible: true },
-  { key: 'exitDate', label: '出場日期', type: 'datetime-local', visible: true },
-  { key: 'timeframe', label: '時間框架', type: 'select', options: ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1'], visible: true },
-  { key: 'entryPrice', label: '進場價格', type: 'number', visible: true },
-  { key: 'exitPrice', label: '出場價格', type: 'number', visible: true },
-  { key: 'lotSize', label: '交易手數', type: 'number', visible: true },
-  { key: 'stopLoss', label: '停損價格', type: 'number', visible: true },
-  { key: 'takeProfit', label: '停利價格', type: 'number', visible: true },
-  { key: 'profitLoss', label: '損益金額', type: 'number', visible: true },
-  { key: 'profitLossPct', label: '損益百分比', type: 'number', visible: true },
-  { key: 'riskGrading', label: '風險等級', type: 'select', options: ['低風險', '中風險', '高風險'], visible: true },
-  { key: 'entryReason', label: '進場理由', type: 'multiselect', options: ['技術分析', '基本面', '新聞事件', '突破', '反彈', '趨勢跟隨', '逆勢交易'], visible: true },
-  { key: 'pattern', label: '技術型態', type: 'multiselect', options: patterns, visible: true },
-  { key: 'marketCondition', label: '市場狀況', type: 'select', options: ['趨勢市場', '震盪市場', '突破市場', '整理市場'], visible: true },
-  { key: 'emotions', label: '情緒標籤', type: 'multiselect', options: ['冷靜', '貪婪', '恐懼', '自信', '焦慮', '興奮', '後悔'], visible: true },
-  { key: 'managementNotes', label: '交易管理筆記', type: 'textarea', visible: true },
-  { key: 'closed', label: '交易已結束', type: 'checkbox', visible: true },
-  { key: 'managedByPlan', label: '是否按計劃管理？', type: 'select', options: ['是', '否'], visible: true },
-  { key: 'lessonsLearned', label: '經驗教訓', type: 'textarea', visible: true }
-];
-
-const defaultGameData = {
-  xp: 0,
-  level: 1,
-  achievements: [],
-  skills: {
-    technical_analysis: 1,
-    risk_management: 1,
-    psychology: 1
-  },
-  streaks: {
-    current_win: 0,
-    best_win: 0,
-    current_days: 0,
-    best_days: 0
-  },
-  stats: {
-    total_trades: 0,
-    winning_trades: 0,
-    plan_adherence: 0,
-    risk_control_rate: 0
-  },
-  personalBrand: {
-    customTitle: '',
-    selectedAvatar: '🌱',
-    tradingPhilosophy: '',
-    marketContribution: 0,
-    helpedNewbies: 0,
-    sharedStrategies: 0
-  },
-  personalRecords: {
-    longest_win_streak: 0,
-    biggest_single_profit: 0,
-    best_monthly_return: 0,
-    perfect_risk_days: 0,
-    trading_consistency: 0,
-    emotional_control_score: 50
-  },
-  unlockedFeatures: ['basic_trading'],
-  milestones: {}
-};
-
-// 徽章系統
-const BADGES = {
-  first_trade: { name: '初次交易', description: '記錄第一筆交易', icon: '🎯', xp: 10 },
-  first_profit: { name: '初嚐甜頭', description: '獲得第一筆盈利', icon: '💰', xp: 25 },
-  win_streak_3: { name: '連勝新手', description: '連續3次盈利交易', icon: '🔥', xp: 50 },
-  win_streak_5: { name: '連勝達人', description: '連續5次盈利交易', icon: '💫', xp: 100 },
-  risk_master: { name: '風險管理大師', description: '嚴格遵守停損10次', icon: '🛡️', xp: 150 },
-  discipline_master: { name: '紀律大師', description: '100%按計劃執行20筆交易', icon: '🎖️', xp: 200 },
-  emotion_control: { name: '情緒控制專家', description: '保持冷靜交易50次', icon: '🧘‍♂️', xp: 120 },
-  profit_hunter: { name: '獲利獵人', description: '單筆獲利超過5%', icon: '🏹', xp: 75 },
-  consistency_king: { name: '一致性之王', description: '連續30天記錄交易', icon: '👑', xp: 300 }
-};
-
-// 交易者等級系統
-const TRADER_LEVELS = [
-  { level: 1, title: '新手交易者', minXP: 0, icon: '🌱', description: '剛踏入交易世界的探索者' },
-  { level: 2, title: '學徒交易員', minXP: 50, icon: '📚', description: '正在學習基礎知識' },
-  { level: 3, title: '見習交易員', minXP: 150, icon: '⚡', description: '開始掌握交易技巧' },
-  { level: 4, title: '專業交易員', minXP: 350, icon: '🎯', description: '具備專業交易能力' },
-  { level: 5, title: '資深專家', minXP: 750, icon: '🔥', description: '經驗豐富的市場參與者' },
-  { level: 6, title: '交易大師', minXP: 1500, icon: '👑', description: '交易領域的專家' },
-  { level: 7, title: '傳奇交易者', minXP: 3000, icon: '⭐', description: '交易界的傳奇人物' }
-];
-
-// 個人記錄定義
-const PERSONAL_RECORDS = {
-  longest_win_streak: { name: '最長連勝', icon: '🔥', unit: '次' },
-  biggest_single_profit: { name: '單筆最大獲利', icon: '💰', unit: '' },
-  best_monthly_return: { name: '最佳月回報', icon: '📈', unit: '%' },
-  perfect_risk_days: { name: '完美風險控制天數', icon: '🛡️', unit: '天' },
-  trading_consistency: { name: '交易一致性', icon: '🎯', unit: '%' },
-  emotional_control_score: { name: '情緒控制分數', icon: '🧘‍♂️', unit: '分' }
-};
-
-// 交易品牌配置
-const TRADING_BRANDS = {
-  avatars: ['🌱', '⚡', '🎯', '🔥', '👑', '⭐', '🚀', '💎', '🦅', '🌟', '💫', '🎲', '🏆', '🔮'],
-  titles: [
-    '量化交易專家', '技術分析大師', '風險管理專家', '趨勢跟隨者', '波段交易達人',
-    '日內交易高手', '基本面分析師', '市場狙擊手', '穩健投資者', '創新交易員',
-    '心理交易專家', '套利交易者', '動量交易專家', '價值投資者', '算法交易員'
-  ],
-  philosophies: [
-    '風險第一，利潤第二',
-    '市場永遠是對的，錯的是我們的判斷',
-    '計劃你的交易，交易你的計劃',
-    '情緒是交易的最大敵人',
-    '簡單的策略往往最有效',
-    '耐心是交易者最重要的品質',
-    '學會止損，才能長期生存',
-    '趨勢是你的朋友，直到它不是',
-    '多樣化是唯一免費的午餐',
-    '知識就是力量，但應用知識才是智慧'
-  ]
-};
-
-// 連勝保護系統
-const STREAK_PROTECTION = {
-  3: { color: colors.warn, message: '🟡 注意：你已連勝3次，建議適度調整倉位大小' },
-  5: { color: colors.orange, message: '🟠 警告：連勝5次，建議謹慎操作，避免過度自信' },
-  7: { color: colors.err, message: '🔴 高風險：連勝7次，強烈建議降低風險，保護既得利益' },
-  10: { color: colors.purple, message: '🟣 極度危險：連勝10次，請立即檢討策略，避免重大回撤' }
-};
-
-// 工具函數
-const checkAchievements = (gameData, trades) => {
-  const newAchievements = [];
-  const closedTrades = trades.filter(trade => trade?.closed);
-  const winningTrades = closedTrades.filter(trade => trade?.profitLoss > 0);
-  
-  // 檢查各種成就
-  if (trades.length >= 1 && !gameData.achievements.includes('first_trade')) {
-    newAchievements.push(BADGES.first_trade);
-  }
-  
-  if (winningTrades.length >= 1 && !gameData.achievements.includes('first_profit')) {
-    newAchievements.push(BADGES.first_profit);
-  }
-  
-  // 檢查連勝成就
-  if (gameData.streaks?.best_win >= 3 && !gameData.achievements.includes('win_streak_3')) {
-    newAchievements.push(BADGES.win_streak_3);
-  }
-  
-  if (gameData.streaks?.best_win >= 5 && !gameData.achievements.includes('win_streak_5')) {
-    newAchievements.push(BADGES.win_streak_5);
-  }
-  
-  return newAchievements;
-};
-
-// 簡化的交易對選擇組件
-const TradingPairSelect = ({ value, onChange }) => {
-  return (
-    <select
-      value={value || ''}
-      onChange={(e) => onChange(e.target.value)}
-      style={inputStyle}
-    >
-      <option value="">請選擇交易對</option>
-      {Object.entries(tradingPairs).map(([category, pairs]) => (
-        <optgroup key={category} label={category}>
-          {pairs.map(pair => (
-            <option key={pair} value={pair}>{pair}</option>
-          ))}
-        </optgroup>
-      ))}
-    </select>
-  );
-};
-
-// 簡化的交易卡片組件
-const TradeCard = ({ trade, onEdit, onDelete }) => {
-  if (!trade) return null;
-
-  return (
-    <div style={{...cardStyle, marginBottom: '16px'}}>
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px'}}>
-        <div>
-          <h4 style={{color: colors.txt0, margin: '0 0 8px 0', fontSize: '16px'}}>
-            {trade.title || `${trade.pair} ${trade.direction}`}
-          </h4>
-          <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
-            {trade.pair && (
-              <span style={{
-                backgroundColor: colors.bg2,
-                color: colors.brand,
-                padding: '4px 8px',
-                borderRadius: '12px',
-                fontSize: '12px',
-                fontWeight: '600'
-              }}>
-                {trade.pair}
-              </span>
-            )}
-            {trade.direction && (
-              <span style={{
-                backgroundColor: trade.direction === '做多 (Long)' ? colors.ok : colors.err,
-                color: colors.bg0,
-                padding: '4px 8px',
-                borderRadius: '12px',
-                fontSize: '12px',
-                fontWeight: '600'
-              }}>
-                {trade.direction}
-              </span>
-            )}
-          </div>
-        </div>
-        <div style={{display: 'flex', gap: '8px'}}>
-          <button
-            onClick={() => onEdit(trade)}
-            style={{
-              ...buttonStyle,
-              backgroundColor: colors.blue,
-              padding: '8px 12px',
-              fontSize: '12px'
-            }}
-          >
-            <Edit3 size={14} />
-          </button>
-          <button
-            onClick={() => onDelete(trade.id)}
-            style={{
-              ...buttonStyle,
-              backgroundColor: colors.err,
-              padding: '8px 12px',
-              fontSize: '12px'
-            }}
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-      </div>
-      
-      {trade.profitLoss !== undefined && trade.profitLoss !== null && (
-        <div style={{
-          color: trade.profitLoss >= 0 ? colors.ok : colors.err,
-          fontSize: '18px',
-          fontWeight: '700',
-          marginBottom: '8px'
-        }}>
-          {trade.profitLoss >= 0 ? '+' : ''}{trade.profitLoss.toFixed(2)}
-          {trade.profitLossPct && ` (${trade.profitLossPct >= 0 ? '+' : ''}${trade.profitLossPct.toFixed(2)}%)`}
-        </div>
-      )}
-      
-      {trade.entryDate && (
-        <div style={{color: colors.txt2, fontSize: '12px'}}>
-          {new Date(trade.entryDate).toLocaleDateString()}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// 簡化的玩家資料組件
-const PlayerProfile = ({ gameData }) => {
-  const currentLevel = TRADER_LEVELS.find(level => 
-    gameData.xp >= level.minXP && 
-    (TRADER_LEVELS.find(l => l.level === level.level + 1)?.minXP > gameData.xp || level.level === 7)
-  ) || TRADER_LEVELS[0];
-
-  return (
-    <div style={glassCardStyle}>
-      <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
-        <div style={{fontSize: '48px'}}>{currentLevel.icon}</div>
-        <div>
-          <div style={{color: colors.txt0, fontSize: '20px', fontWeight: '700'}}>
-            {currentLevel.title}
-          </div>
-          <div style={{color: colors.txt2, fontSize: '14px'}}>
-            等級 {currentLevel.level} • {gameData.xp} XP
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// 簡化的技能樹組件
-const SkillTree = ({ gameData, onUpgrade }) => {
-  return (
-    <div style={cardStyle}>
-      <h3 style={{color: colors.txt0, marginBottom: '20px'}}>技能發展</h3>
-      <div style={{color: colors.txt2}}>
-        技能系統開發中...
-      </div>
-    </div>
-  );
-};
-
-// 簡化的每日任務組件
-const DailyQuests = ({ onComplete }) => {
-  return (
-    <div style={cardStyle}>
-      <h3 style={{color: colors.txt0, marginBottom: '20px'}}>今日任務</h3>
-      <div style={{color: colors.txt2}}>
-        任務系統開發中...
-      </div>
-    </div>
-  );
-};
-
-// 簡化的選項管理組件
-const OptionManager = ({ fields, onFieldsUpdate }) => {
-  return (
-    <div style={{...cardStyle, marginBottom: '32px'}}>
-      <h3 style={{color: colors.txt0, marginBottom: '20px'}}>選項管理</h3>
-      <div style={{color: colors.txt2}}>
-        選項管理功能開發中...
-      </div>
-    </div>
-  );
-};
-
-// 簡化的自訂字段創建組件
-const CustomFieldCreator = ({ fields, onFieldsUpdate }) => {
-  return (
-    <div style={{...cardStyle, marginBottom: '32px'}}>
-      <h3 style={{color: colors.txt0, marginBottom: '20px'}}>自訂字段創建</h3>
-      <div style={{color: colors.txt2}}>
-        自訂字段功能開發中...
-      </div>
-    </div>
-  );
-};
-
-// 簡化的字段可見性管理組件
-const FieldVisibilityManager = ({ fields, onFieldsUpdate }) => {
-  return (
-    <div style={cardStyle}>
-      <h3 style={{color: colors.txt0, marginBottom: '20px'}}>字段顯示控制</h3>
-      <div style={{color: colors.txt2}}>
-        字段管理功能開發中...
-      </div>
-    </div>
-  );
-};
-
 // 表單字段組件
 const FormField = ({ field, value, onChange }) => {
   const handleChange = (newValue) => {
@@ -1129,17 +687,30 @@ const TradingJournalApp = () => {
           <div>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px'}}>
               <h2 style={{color: colors.txt0, margin: 0, fontSize: '32px', fontWeight: '700'}}>交易儀表板</h2>
-              <button
-                onClick={() => {
-                  setEditingTrade(null);
-                  setFormData({});
-                  setCurrentView('edit');
-                }}
-                style={{...buttonStyle, display: 'flex', alignItems: 'center', gap: '8px'}}
-              >
-                <PlusCircle size={18} />
-                新增交易
-              </button>
+              <div style={{display: 'flex', gap: '12px'}}>
+                <button
+                  onClick={() => {
+                    setEditingTrade(null);
+                    setFormData({type: 'trading'});
+                    setCurrentView('edit');
+                  }}
+                  style={{...buttonStyle, display: 'flex', alignItems: 'center', gap: '8px'}}
+                >
+                  <PlusCircle size={18} />
+                  新增交易日
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingTrade(null);
+                    setFormData({type: 'non-trading'});
+                    setCurrentView('edit');
+                  }}
+                  style={{...buttonStyle, backgroundColor: colors.purple, display: 'flex', alignItems: 'center', gap: '8px'}}
+                >
+                  <Calendar size={18} />
+                  新增非交易日
+                </button>
+              </div>
             </div>
 
             {/* 個人交易品牌展示區 */}
@@ -1287,6 +858,9 @@ const TradingJournalApp = () => {
             
             <PlayerProfile gameData={gameData} onUpdate={saveGameData} />
             <StatsDashboard trades={trades} accountBalance={accountBalance} totalPL={totalPL} gameData={gameData} />
+            
+            {/* 錯誤模式分析 */}
+            <ErrorPatternAnalysis trades={trades} />
             
             <div style={cardStyle}>
               <h3 style={{color: colors.txt0, marginBottom: '20px', fontSize: '20px'}}>最近交易</h3>
@@ -1461,25 +1035,35 @@ const TradingJournalApp = () => {
         );
 
       case 'edit':
-        const visibleFields = Array.isArray(fields) ? fields.filter(field => field && field.visible) : [];
+        const recordType = formData.type || 'trading';
+        const visibleFields = Array.isArray(fields) ? fields.filter(field => {
+          if (!field || !field.visible) return false;
+          if (field.category === 'common') return true;
+          return field.category === recordType;
+        }) : [];
+        
         return (
           <div>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px'}}>
               <h2 style={{color: colors.txt0, margin: 0, fontSize: '32px', fontWeight: '700'}}>
-                {editingTrade ? '編輯交易' : '新增交易'}
+                {editingTrade ? '編輯記錄' : (recordType === 'trading' ? '新增交易日記錄' : '新增非交易日記錄')}
               </h2>
               <div style={{display: 'flex', gap: '12px'}}>
                 <button
-                  onClick={() => setCurrentView('trades')}
+                  onClick={() => setCurrentView('dashboard')}
                   style={{...buttonStyle, backgroundColor: colors.bg2, color: colors.txt0, boxShadow: 'none'}}
                 >
                   取消
                 </button>
                 <button onClick={handleSaveTrade} style={buttonStyle}>
-                  儲存交易
+                  儲存記錄
                 </button>
               </div>
             </div>
+            
+            {/* 火焰條顯示 */}
+            <FlameStreak gameData={gameData} trades={trades} />
+            
             <div style={cardStyle}>
               <div style={{display: 'grid', gap: '24px'}}>
                 {visibleFields.map(field => (
@@ -2127,6 +1711,130 @@ const TradingJournalApp = () => {
               </div>
             </div>
 
+            {/* 匯出功能 */}
+            <div style={{...cardStyle, marginBottom: '32px'}}>
+              <h3 style={{color: colors.txt0, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <Download size={20} />
+                資料匯出
+                <span style={{
+                  backgroundColor: colors.ok,
+                  color: colors.bg0,
+                  padding: '4px 8px',
+                  borderRadius: '12px',
+                  fontSize: '11px',
+                  fontWeight: '700'
+                }}>
+                  社交影響
+                </span>
+              </h3>
+              
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px'}}>
+                <div style={{
+                  padding: '20px',
+                  backgroundColor: colors.bg0,
+                  borderRadius: '12px',
+                  border: `2px solid ${colors.brand}30`
+                }}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px'}}>
+                    <div style={{fontSize: '24px'}}>📄</div>
+                    <div>
+                      <h4 style={{color: colors.txt0, fontSize: '16px', fontWeight: '700', margin: 0}}>
+                        交易記錄匯出
+                      </h4>
+                      <p style={{color: colors.txt2, fontSize: '12px', margin: '4px 0'}}>
+                        匯出所有交易記錄為 CSV 格式
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const csvData = exportTradesToCSV(trades);
+                      downloadCSV(csvData, 'trading-records.csv');
+                    }}
+                    style={{
+                      ...buttonStyle,
+                      width: '100%',
+                      padding: '12px',
+                      fontSize: '14px'
+                    }}
+                  >
+                    <Download size={16} style={{marginRight: '8px'}} />
+                    匯出交易記錄
+                  </button>
+                </div>
+                
+                <div style={{
+                  padding: '20px',
+                  backgroundColor: colors.bg0,
+                  borderRadius: '12px',
+                  border: `2px solid ${colors.gold}30`
+                }}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px'}}>
+                    <div style={{fontSize: '24px'}}>📊</div>
+                    <div>
+                      <h4 style={{color: colors.txt0, fontSize: '16px', fontWeight: '700', margin: 0}}>
+                        週報匯出
+                      </h4>
+                      <p style={{color: colors.txt2, fontSize: '12px', margin: '4px 0'}}>
+                        匯出本週交易分析報告
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const weeklyReport = generateWeeklyReport(trades, gameData);
+                      downloadJSON(weeklyReport, 'weekly-report.json');
+                    }}
+                    style={{
+                      ...buttonStyle,
+                      backgroundColor: colors.gold,
+                      width: '100%',
+                      padding: '12px',
+                      fontSize: '14px'
+                    }}
+                  >
+                    <BarChart3 size={16} style={{marginRight: '8px'}} />
+                    生成週報
+                  </button>
+                </div>
+                
+                <div style={{
+                  padding: '20px',
+                  backgroundColor: colors.bg0,
+                  borderRadius: '12px',
+                  border: `2px solid ${colors.legendary}30`
+                }}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px'}}>
+                    <div style={{fontSize: '24px'}}>🏆</div>
+                    <div>
+                      <h4 style={{color: colors.txt0, fontSize: '16px', fontWeight: '700', margin: 0}}>
+                        成就分享
+                      </h4>
+                      <p style={{color: colors.txt2, fontSize: '12px', margin: '4px 0'}}>
+                        分享個人交易成就給夥伴或教練
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const achievementSummary = generateAchievementSummary(gameData, trades);
+                      downloadJSON(achievementSummary, 'achievement-summary.json');
+                    }}
+                    style={{
+                      ...buttonStyle,
+                      backgroundColor: colors.legendary,
+                      width: '100%',
+                      padding: '12px',
+                      fontSize: '14px'
+                    }}
+                  >
+                    <Trophy size={16} style={{marginRight: '8px'}} />
+                    分享成就
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* 選項管理 */}
             <OptionManager fields={fields} onFieldsUpdate={saveFields} />
 
@@ -2198,4 +1906,2759 @@ const TradingJournalApp = () => {
   );
 };
 
+// 匯出功能輔助函數
+const exportTradesToCSV = (trades) => {
+  const headers = [
+    '日期', '記錄類型', '交易標題', '交易對象', '交易方向', '進場價格', '出場價格',
+    '損益金額', '損益百分比', 'R倍數', '策略名稱', '符合策略', '風控遵守',
+    '情緒狀態', '心態評分', '自訂標籤', '按計劃管理', '當日心得'
+  ];
+  
+  const csvContent = [
+    headers.join(','),
+    ...trades.map(trade => [
+      trade.date || trade.entryDate || '',
+      trade.type === 'trading' ? '交易日' : '非交易日',
+      trade.title || '',
+      trade.pair || '',
+      trade.direction || '',
+      trade.entryPrice || '',
+      trade.exitPrice || '',
+      trade.profitLoss || '',
+      trade.profitLossPct || '',
+      trade.rMultiple || '',
+      trade.strategy || '',
+      trade.strategyCompliant || '',
+      trade.riskControl || '',
+      Array.isArray(trade.emotions) ? trade.emotions.join(';') : '',
+      trade.mentalScore || '',
+      Array.isArray(trade.customTags) ? trade.customTags.join(';') : '',
+      trade.managedByPlan || '',
+      trade.dailyReflection || ''
+    ].map(field => `"${field}"`).join(','))
+  ].join('\\n');
+  
+  return csvContent;
+};
+
+const generateWeeklyReport = (trades, gameData) => {
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+  
+  const weekTrades = trades.filter(trade => {
+    const tradeDate = new Date(trade.date || trade.entryDate);
+    return tradeDate >= weekStart && tradeDate <= weekEnd;
+  });
+  
+  const tradingDays = weekTrades.filter(trade => trade.type === 'trading' && trade.closed);
+  const winningTrades = tradingDays.filter(trade => trade.profitLoss > 0);
+  const totalPL = tradingDays.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0);
+  
+  return {
+    reportDate: now.toISOString(),
+    weekPeriod: {
+      start: weekStart.toDateString(),
+      end: weekEnd.toDateString()
+    },
+    summary: {
+      totalTrades: tradingDays.length,
+      winningTrades: winningTrades.length,
+      winRate: tradingDays.length > 0 ? ((winningTrades.length / tradingDays.length) * 100).toFixed(1) + '%' : '0%',
+      totalPL: totalPL.toFixed(2),
+      averageReturn: tradingDays.length > 0 ? (totalPL / tradingDays.length).toFixed(2) : '0',
+      planAdherence: tradingDays.filter(t => t.managedByPlan === '是').length,
+      riskControlRate: tradingDays.filter(t => t.riskControl === '是').length
+    },
+    achievements: gameData.achievements || [],
+    currentLevel: gameData.xp || 0,
+    streaks: gameData.streaks || {},
+    topStrategies: getTopStrategies(tradingDays),
+    emotionalState: getEmotionalAnalysis(tradingDays),
+    improvements: getImprovementSuggestions(tradingDays)
+  };
+};
+
+const generateAchievementSummary = (gameData, trades) => {
+  const closedTrades = trades.filter(trade => trade.closed && trade.type === 'trading');
+  const totalPL = closedTrades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0);
+  
+  return {
+    exportDate: new Date().toISOString(),
+    traderProfile: {
+      level: gameData.xp || 0,
+      title: gameData.personalBrand?.customTitle || '交易者',
+      avatar: gameData.personalBrand?.selectedAvatar || '🌱',
+      philosophy: gameData.personalBrand?.tradingPhilosophy || ''
+    },
+    achievements: (gameData.achievements || []).map(badgeId => ({
+      id: badgeId,
+      name: BADGES[badgeId]?.name || badgeId,
+      description: BADGES[badgeId]?.description || '',
+      icon: BADGES[badgeId]?.icon || '🏆'
+    })),
+    personalRecords: gameData.personalRecords || {},
+    tradingStats: {
+      totalTrades: closedTrades.length,
+      totalPL: totalPL.toFixed(2),
+      winRate: closedTrades.length > 0 ? ((closedTrades.filter(t => t.profitLoss > 0).length / closedTrades.length) * 100).toFixed(1) + '%' : '0%',
+      bestStreak: gameData.streaks?.best_win || 0,
+      currentStreak: gameData.streaks?.current_win || 0
+    },
+    socialContribution: {
+      marketContribution: gameData.personalBrand?.marketContribution || 0,
+      helpedNewbies: gameData.personalBrand?.helpedNewbies || 0,
+      sharedStrategies: gameData.personalBrand?.sharedStrategies || 0
+    }
+  };
+};
+
+const getTopStrategies = (trades) => {
+  const strategyStats = {};
+  trades.forEach(trade => {
+    if (trade.strategy) {
+      if (!strategyStats[trade.strategy]) {
+        strategyStats[trade.strategy] = { count: 0, totalPL: 0 };
+      }
+      strategyStats[trade.strategy].count++;
+      strategyStats[trade.strategy].totalPL += trade.profitLoss || 0;
+    }
+  });
+  
+  return Object.entries(strategyStats)
+    .map(([strategy, stats]) => ({
+      strategy,
+      count: stats.count,
+      totalPL: stats.totalPL.toFixed(2),
+      avgPL: (stats.totalPL / stats.count).toFixed(2)
+    }))
+    .sort((a, b) => b.totalPL - a.totalPL)
+    .slice(0, 3);
+};
+
+const getEmotionalAnalysis = (trades) => {
+  const emotions = {};
+  trades.forEach(trade => {
+    if (trade.emotions && Array.isArray(trade.emotions)) {
+      trade.emotions.forEach(emotion => {
+        emotions[emotion] = (emotions[emotion] || 0) + 1;
+      });
+    }
+  });
+  
+  const total = Object.values(emotions).reduce((sum, count) => sum + count, 0);
+  return Object.entries(emotions).map(([emotion, count]) => ({
+    emotion,
+    count,
+    percentage: total > 0 ? ((count / total) * 100).toFixed(1) + '%' : '0%'
+  }));
+};
+
+const getImprovementSuggestions = (trades) => {
+  const suggestions = [];
+  const losingTrades = trades.filter(t => t.profitLoss < 0);
+  const emotionalTrades = trades.filter(t => t.emotions?.includes('恐懼') || t.emotions?.includes('貪婪'));
+  const nonPlanTrades = trades.filter(t => t.managedByPlan === '否');
+  
+  if (losingTrades.length > trades.length * 0.6) {
+    suggestions.push('勝率偏低，建議重新檢視交易策略或進場時機');
+  }
+  
+  if (emotionalTrades.length > trades.length * 0.3) {
+    suggestions.push('情緒化交易比例較高，建議加強心理控制訓練');
+  }
+  
+  if (nonPlanTrades.length > trades.length * 0.2) {
+    suggestions.push('未按計劃執行的交易較多，建議加強紀律性');
+  }
+  
+  if (suggestions.length === 0) {
+    suggestions.push('交易表現良好，繼續保持當前的交易紀律');
+  }
+  
+  return suggestions;
+};
+
+const downloadCSV = (csvContent, filename) => {
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const downloadJSON = (data, filename) => {
+  const jsonString = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonString], { type: 'application/json' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+// 火焰條組件 - 連續記錄天數追蹤
+const FlameStreak = ({ gameData, trades }) => {
+  const today = new Date().toDateString();
+  const hasRecordToday = trades.some(trade => {
+    const tradeDate = trade.date || trade.entryDate;
+    return tradeDate && new Date(tradeDate).toDateString() === today;
+  });
+  
+  const streakDays = gameData?.streaks?.current_days || 0;
+  const maxStreak = 30;
+  const flameIntensity = Math.min(streakDays / maxStreak, 1);
+  
+  const getFlameEmoji = (days) => {
+    if (days === 0) return '🔥';
+    if (days < 3) return '🔥';
+    if (days < 7) return '🔥🔥';
+    if (days < 14) return '🔥🔥🔥';
+    return '🔥🔥🔥🔥';
+  };
+  
+  const getFlameColor = (days, hasRecord) => {
+    if (!hasRecord && days === 0) return colors.err;
+    if (days < 3) return colors.warn;
+    if (days < 7) return colors.brand;
+    if (days < 14) return colors.gold;
+    return colors.legendary;
+  };
+  
+  return (
+    <div style={{
+      ...cardStyle,
+      marginBottom: '32px',
+      background: `linear-gradient(135deg, ${getFlameColor(streakDays, hasRecordToday)}20, ${colors.bg1})`,
+      border: `2px solid ${getFlameColor(streakDays, hasRecordToday)}30`
+    }}>
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '16px'}}>
+          <div style={{fontSize: '48px'}}>
+            {hasRecordToday ? getFlameEmoji(streakDays) : '💀'}
+          </div>
+          <div>
+            <div style={{color: colors.txt0, fontSize: '20px', fontWeight: '700', marginBottom: '4px'}}>
+              {hasRecordToday ? `🔥 火焰連擊：${streakDays} 天` : '💀 今日尚未記錄'}
+            </div>
+            <div style={{color: colors.txt2, fontSize: '14px'}}>
+              {hasRecordToday 
+                ? '太棒了！保持每日記錄的好習慣' 
+                : '快來記錄今天的交易或非交易日，維持火焰不滅！'}
+            </div>
+          </div>
+        </div>
+        
+        <div style={{textAlign: 'right'}}>
+          <div style={{color: getFlameColor(streakDays, hasRecordToday), fontSize: '24px', fontWeight: '700'}}>
+            {streakDays}
+          </div>
+          <div style={{color: colors.txt2, fontSize: '12px'}}>連續天數</div>
+        </div>
+      </div>
+      
+      {/* 進度條 */}
+      <div style={{marginTop: '16px'}}>
+        <div style={{
+          backgroundColor: colors.bg0,
+          borderRadius: '12px',
+          padding: '4px',
+          position: 'relative'
+        }}>
+          <div style={{
+            background: `linear-gradient(90deg, ${getFlameColor(streakDays, hasRecordToday)}, ${colors.gold})`,
+            height: '8px',
+            borderRadius: '8px',
+            width: `${(streakDays / maxStreak) * 100}%`,
+            transition: 'width 0.8s ease'
+          }} />
+        </div>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontSize: '12px',
+          color: colors.txt2,
+          marginTop: '4px'
+        }}>
+          <span>目標：連續 {maxStreak} 天</span>
+          <span>{Math.round((streakDays / maxStreak) * 100)}% 完成</span>
+        </div>
+      </div>
+      
+      {!hasRecordToday && (
+        <div style={{
+          marginTop: '16px',
+          padding: '12px',
+          backgroundColor: colors.err + '20',
+          borderRadius: '8px',
+          border: `1px solid ${colors.err}`,
+          textAlign: 'center'
+        }}>
+          <div style={{color: colors.err, fontSize: '14px', fontWeight: '600'}}>
+            ⚠️ 火焰即將熄滅！趕快記錄今天的交易活動
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 錯誤模式分析組件
+const ErrorPatternAnalysis = ({ trades }) => {
+  const closedTrades = Array.isArray(trades) ? trades.filter(trade => trade?.closed && trade.type === 'trading') : [];
+  
+  // 分析常見錯誤
+  const analyzeErrors = () => {
+    const errors = {
+      '過早出場': 0,
+      '情緒化交易': 0,
+      '不符策略': 0,
+      '風控失誤': 0,
+      '過度交易': 0
+    };
+    
+    closedTrades.forEach(trade => {
+      if (trade.customTags?.includes('過早出場')) errors['過早出場']++;
+      if (trade.customTags?.includes('情緒化交易')) errors['情緒化交易']++;
+      if (trade.strategyCompliant === '否 ❌') errors['不符策略']++;
+      if (trade.riskControl === '否') errors['風控失誤']++;
+      if (trade.overTrading === '是') errors['過度交易']++;
+    });
+    
+    return Object.entries(errors)
+      .map(([error, count]) => ({
+        error,
+        count,
+        percentage: closedTrades.length > 0 ? Math.round((count / closedTrades.length) * 100) : 0
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+  };
+  
+  const topErrors = analyzeErrors();
+  
+  return (
+    <div style={{
+      ...cardStyle,
+      marginBottom: '20px',
+      background: `linear-gradient(135deg, ${colors.warn}20, ${colors.bg1})`,
+      border: `2px solid ${colors.warn}30`
+    }}>
+      <h3 style={{color: colors.txt0, marginBottom: '16px', fontSize: '18px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px'}}>
+        📊 錯誤模式分析
+      </h3>
+      
+      {topErrors.length === 0 ? (
+        <div style={{textAlign: 'center', color: colors.txt2, padding: '20px'}}>
+          暫無足夠的交易數據進行分析
+        </div>
+      ) : (
+        <>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            gap: '12px',
+            marginBottom: '16px'
+          }}>
+            {topErrors.map((errorData, index) => (
+              <div key={errorData.error} style={{
+                textAlign: 'center',
+                padding: '12px',
+                backgroundColor: colors.bg0,
+                borderRadius: '8px',
+                border: `1px solid ${index === 0 ? colors.err : colors.warn}`
+              }}>
+                <div style={{color: index === 0 ? colors.err : colors.warn, fontSize: '18px', fontWeight: '700'}}>
+                  {errorData.percentage}%
+                </div>
+                <div style={{color: colors.txt2, fontSize: '12px'}}>
+                  {errorData.error}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div style={{
+            padding: '12px',
+            backgroundColor: colors.brand + '20',
+            borderRadius: '8px',
+            border: `1px solid ${colors.brand}`
+          }}>
+            <div style={{color: colors.brand, fontSize: '14px', fontWeight: '600', marginBottom: '4px'}}>
+              💡 下週改進建議
+            </div>
+            <div style={{color: colors.txt1, fontSize: '13px'}}>
+              {topErrors.length > 0 && topErrors[0].percentage > 20 
+                ? `重點關注「${topErrors[0].error}」問題，建議在交易前制定明確的出場計劃` 
+                : '繼續保持良好的交易紀律，細心記錄每筆交易的執行情況'}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 export default TradingJournalApp;
+import { 
+  PlusCircle, TrendingUp, TrendingDown, Calendar, Target, Settings, BarChart3, 
+  FileText, Search, Filter, Eye, EyeOff, Trash2, Edit3, Upload, Download, 
+  DollarSign, RefreshCw, Image, X, Star, Trophy, Crown, Zap, Shield, 
+  Award, Users, BookOpen, Brain, Heart, Flame, Lock, Gift, Timer,
+  Sparkles, Medal, Sword, Compass, Diamond, Gem, Rocket
+} from 'lucide-react';
+
+// 交易者等級系統 - 基於八角框架的史詩意義與使命感
+const TRADER_LEVELS = [
+  { level: 1, title: '新手交易者', minXP: 0, icon: '🌱', color: '#10B981', description: '剛踏入交易世界的探索者' },
+  { level: 5, title: '學徒交易者', minXP: 200, icon: '📚', color: '#3B82F6', description: '開始學習市場規律的學生' },
+  { level: 10, title: '專業交易者', minXP: 1000, icon: '💼', color: '#8B5CF6', description: '掌握基本交易技巧的實踐者' },
+  { level: 20, title: '大師交易者', minXP: 3000, icon: '🎯', color: '#F59E0B', description: '具有豐富經驗的市場專家' },
+  { level: 30, title: '傳奇交易者', minXP: 7000, icon: '👑', color: '#EF4444', description: '在市場中創造傳奇的智者' },
+  { level: 50, title: '市場之神', minXP: 15000, icon: '⚡', color: '#FBBF24', description: '達到交易藝術巔峰的至高存在' }
+];
+
+// 個人交易品牌系統 - 八角框架：創意授權與反饋
+const TRADING_BRANDS = {
+  titles: [
+    '量化分析師', '技術專家', '基本面研究員', '風險管理大師', 
+    '心理戰士', '市場獵人', '趨勢騎士', '套利專家',
+    '波段舞者', '日內刺客', '長線投資家', '價值發現者'
+  ],
+  avatars: [
+    '🚀', '⚡', '🎯', '🔥', '💎', '👑', '🛡️', '⭐', 
+    '🌟', '💫', '✨', '🏆', '🎪', '🎭', '🎨', '🎯'
+  ],
+  philosophies: [
+    '趨勢是我的朋友，我跟隨市場的步伐',
+    '風險控制是成功的基石，每筆交易都要設停損',
+    '耐心等待最佳時機，寧可錯過也不犯錯',
+    '情緒是交易的敵人，冷靜分析才能獲勝',
+    '持續學習和改進，每天都要進步一點點',
+    '紀律執行交易計劃，不被貪婪和恐懼左右'
+  ]
+};
+
+// 里程碑獎勵系統 - 八角框架：進步與成就感
+const MILESTONE_REWARDS = {
+  first_week: {
+    name: '首週勇士',
+    desc: '堅持記錄交易一週',
+    icon: '🗓️',
+    xp: 100,
+    unlockFeature: 'advanced_charts'
+  },
+  profit_milestone_100: {
+    name: '百元獲利',
+    desc: '累計獲利達到100元',
+    icon: '💰',
+    xp: 150,
+    unlockFeature: 'risk_calculator'
+  },
+  profit_milestone_1000: {
+    name: '千元富翁',
+    desc: '累計獲利達到1000元',
+    icon: '💎',
+    xp: 500,
+    unlockFeature: 'advanced_analytics'
+  },
+  streak_master: {
+    name: '連勝大師',
+    desc: '達成10連勝',
+    icon: '🔥',
+    xp: 1000,
+    unlockFeature: 'expert_mode'
+  },
+  discipline_legend: {
+    name: '紀律傳說',
+    desc: '100%按計劃執行50筆交易',
+    icon: '⚖️',
+    xp: 800,
+    unlockFeature: 'strategy_templates'
+  }
+};
+
+// 個人記錄系統 - 八角框架：進步與成就感
+const PERSONAL_RECORDS = {
+  longest_win_streak: { name: '最長連勝紀錄', icon: '🔥', unit: '筆' },
+  biggest_single_profit: { name: '單筆最大獲利', icon: '💰', unit: '$' },
+  best_monthly_return: { name: '最佳月度回報', icon: '📈', unit: '%' },
+  perfect_risk_days: { name: '完美風控天數', icon: '🛡️', unit: '天' },
+  trading_consistency: { name: '交易一致性', icon: '⚖️', unit: '%' },
+  emotional_control_score: { name: '情緒控制分數', icon: '🧘', unit: '分' }
+};
+
+// 徽章系統
+const BADGES = {
+  'first_profit': { name: '首戰告捷', icon: '🎉', description: '完成首筆盈利交易', xp: 50 },
+  'win_streak_3': { name: '三連勝', icon: '🔥', description: '連續3筆盈利交易', xp: 100 },
+  'win_streak_5': { name: '五連勝', icon: '⚡', description: '連續5筆盈利交易', xp: 200 },
+  'win_streak_10': { name: '十連勝', icon: '💫', description: '連續10筆盈利交易', xp: 500 },
+  'risk_master': { name: '風控大師', icon: '🛡️', description: '95%以上交易設置停損', xp: 300 },
+  'discipline_trader': { name: '紀律交易者', icon: '⚖️', description: '90%以上交易按計劃執行', xp: 400 },
+  'monthly_profit': { name: '月度盈利王', icon: '👑', description: '單月盈利超過10%', xp: 600 },
+  'big_winner': { name: '大贏家', icon: '💰', description: '單筆交易盈利超過5%', xp: 250 },
+  'analyst': { name: '技術分析師', icon: '📊', description: '完成50次技術分析', xp: 200 },
+  'strategist': { name: '策略大師', icon: '🎲', description: '使用5種不同交易策略', xp: 300 },
+  'trader_100': { name: '百戰老兵', icon: '🏆', description: '完成100筆交易', xp: 500 },
+  'profit_10k': { name: '萬元富翁', icon: '💎', description: '累計盈利達到10,000', xp: 1000 }
+};
+
+// 連勝保護系統
+const STREAK_PROTECTION = {
+  3: { message: '三連勝！保持冷靜，不要貪婪 💪', color: '#F59E0B' },
+  5: { message: '五連勝！考慮減少倉位規模 ⚠️', color: '#EF4444' },
+  7: { message: '七連勝！市場可能即將轉向 🚨', color: '#DC2626' },
+  10: { message: '十連勝！極度危險，建議停止交易 ☠️', color: '#991B1B' }
+};
+
+// 顏色系統 - 增強遊戲化配色
+const colors = {
+  bg0: '#0A0E1A',
+  bg1: '#0F1419',
+  bg2: '#1A1F2E',
+  bg3: '#242938',
+  txt0: '#E6EDF3',
+  txt1: '#9FB0C3',
+  txt2: '#6B7280',
+  brand: '#00D4FF',
+  brandDark: '#0099CC',
+  gold: '#FFD700',
+  silver: '#C0C0C0',
+  bronze: '#CD7F32',
+  legendary: '#FF6B35',
+  epic: '#9D4EDD',
+  rare: '#4CC9F0',
+  common: '#7209B7',
+  ok: '#39D98A',
+  warn: '#F72585',
+  err: '#E63946',
+  purple: '#8B5CF6',
+  blue: '#4A90E2',
+  orange: '#FF8A00',
+  pink: '#FF69B4',
+  cyan: '#00FFF0',
+  lime: '#32FF32'
+};
+
+// 遊戲化配置
+const gameConfig = {
+  levels: [
+    { level: 1, title: '新手交易者', minXP: 0, color: colors.common, icon: '🌱' },
+    { level: 2, title: '學徒', minXP: 100, color: colors.common, icon: '📚' },
+    { level: 3, title: '見習交易員', minXP: 300, color: colors.rare, icon: '⚡' },
+    { level: 4, title: '專業交易員', minXP: 600, color: colors.epic, icon: '🎯' },
+    { level: 5, title: '資深專家', minXP: 1000, color: colors.legendary, icon: '🔥' },
+    { level: 6, title: '交易大師', minXP: 1500, color: colors.gold, icon: '👑' },
+    { level: 7, title: '傳奇交易者', minXP: 2500, color: colors.gold, icon: '⭐' }
+  ],
+  achievements: [
+    { id: 'first_profit', name: '首次盈利', desc: '獲得第一筆盈利交易', icon: '💰', xp: 50, rarity: 'common' },
+    { id: 'win_streak_5', name: '連勝達人', desc: '連續5次盈利交易', icon: '🔥', xp: 100, rarity: 'rare' },
+    { id: 'risk_master', name: '風險管理大師', desc: '嚴格遵守停損規則10次', icon: '🛡️', xp: 150, rarity: 'epic' },
+    { id: 'discipline_trader', name: '紀律交易者', desc: '100%按計劃執行20筆交易', icon: '🎯', xp: 200, rarity: 'legendary' },
+    { id: 'profit_king', name: '獲利之王', desc: '單月獲利超過10%', icon: '👑', xp: 300, rarity: 'legendary' },
+    { id: 'marathon_trader', name: '交易馬拉松', desc: '連續30天記錄交易', icon: '🏃‍♂️', xp: 100, rarity: 'rare' },
+    { id: 'perfect_month', name: '完美月份', desc: '一個月內無虧損交易', icon: '✨', xp: 500, rarity: 'legendary' },
+    { id: 'emotion_control', name: '情緒控制專家', desc: '標記為冷靜的交易達到50筆', icon: '🧘‍♂️', xp: 150, rarity: 'epic' }
+  ],
+  skills: [
+    { 
+      id: 'technical_analysis', 
+      name: '技術分析', 
+      icon: '📈', 
+      levels: [
+        { level: 1, name: '基礎圖表', xpCost: 0, benefit: '解鎖基本技術指標' },
+        { level: 2, name: '型態識別', xpCost: 100, benefit: '提升型態分析能力' },
+        { level: 3, name: '進階分析', xpCost: 200, benefit: '複雜指標組合運用' }
+      ]
+    },
+    {
+      id: 'risk_management',
+      name: '風險管理',
+      icon: '🛡️',
+      levels: [
+        { level: 1, name: '基礎風控', xpCost: 0, benefit: '學會設置停損' },
+        { level: 2, name: '資金管理', xpCost: 150, benefit: '最適倉位計算' },
+        { level: 3, name: '風險專家', xpCost: 300, benefit: '動態風險調整' }
+      ]
+    },
+    {
+      id: 'psychology',
+      name: '交易心理',
+      icon: '🧠',
+      levels: [
+        { level: 1, name: '情緒認知', xpCost: 0, benefit: '識別交易情緒' },
+        { level: 2, name: '心理控制', xpCost: 120, benefit: '提升心理韌性' },
+        { level: 3, name: '禪定交易', xpCost: 250, benefit: '達到心流狀態' }
+      ]
+    }
+  ]
+};
+
+// 用戶遊戲化數據結構 - 增強版
+const defaultGameData = {
+  xp: 0,
+  level: 1,
+  achievements: [],
+  skills: {
+    technical_analysis: 1,
+    risk_management: 1,
+    psychology: 1
+  },
+  streaks: {
+    current_win: 0,
+    best_win: 0,
+    current_days: 0,
+    best_days: 0
+  },
+  stats: {
+    total_trades: 0,
+    winning_trades: 0,
+    plan_adherence: 0,
+    risk_control_rate: 0
+  },
+  // 新增：個人交易品牌
+  personalBrand: {
+    customTitle: '',
+    selectedAvatar: '🌱',
+    tradingPhilosophy: '',
+    marketContribution: 0,
+    helpedNewbies: 0,
+    sharedStrategies: 0
+  },
+  // 新增：個人記錄
+  personalRecords: {
+    longest_win_streak: 0,
+    biggest_single_profit: 0,
+    best_monthly_return: 0,
+    perfect_risk_days: 0,
+    trading_consistency: 0,
+    emotional_control_score: 50
+  },
+  // 新增：解鎖的功能
+  unlockedFeatures: ['basic_trading'],
+  // 新增：里程碑進度
+  milestones: {}
+};
+
+// 完整的交易對列表
+const tradingPairs = {
+  外匯: ['EURUSD', 'GBPUSD', 'USDJPY', 'AUDCAD', 'AUDJPY', 'AUDNZD', 'CADJPY', 'EURCAD', 'EURJPY', 'GBPJPY', 'GBPNZD', 'NZDCAD', 'NZDCHF', 'NZDJPY', 'AUDUSD', 'EURNZD', 'GBPAUD', 'GBPCHF', 'NZDUSD', 'USDCAD', 'AUDCHF', 'CADCHF', 'CHFJPY', 'EURAUD', 'EURGBP', 'USDCHF'],
+  加密貨幣: ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'ADAUSDT', 'DOTUSDT', 'LINKUSDT', 'LTCUSDT', 'BNBUSDT', 'MATICUSDT', 'AVAXUSDT', 'ATOMUSDT'],
+  商品: ['XAUUSD', 'XAGUSD', 'DXY', 'USOIL', 'UKOIL', 'US30', 'NAS100', 'SPX500', 'GER40', 'UK100']
+};
+
+const patterns = [
+  '旗型', 'Bull Flag', 'Bear Flag', 'Flat Flag',
+  '三角形', 'Symmetrical Triangle', 'Expanding Triangle', 'Ascending Triangle', 'Descending Triangle',
+  '通道', 'Ascending Channel', 'Descending Channel', 'Parallel Channel',
+  '楔形', 'Rising Wedge', 'Falling Wedge',
+  '經典型態', 'Head & Shoulders', 'Inverse Head & Shoulders', 'Double Top', 'Double Bottom', 'Triple Top', 'Triple Bottom',
+  '其他', 'Cup & Handle', 'Rectangle', 'Pennant', 'Diamond'
+];
+
+// 預設字段配置 - 調整版本，支援交易日和非交易日
+const defaultFields = [
+  // 通用字段
+  { key: 'type', label: '記錄類型', type: 'select', options: ['trading', 'non-trading'], visible: true, required: true, category: 'common' },
+  { key: 'date', label: '日期', type: 'date', visible: true, required: true, category: 'common' },
+  { key: 'dailyReflection', label: '當日心得', type: 'textarea', visible: true, category: 'common' },
+  
+  // 交易日專用字段
+  { key: 'title', label: '交易標題', type: 'text', visible: true, required: true, category: 'trading' },
+  { key: 'pair', label: '交易對象', type: 'trading-pair-select', visible: true, category: 'trading' },
+  { key: 'direction', label: '交易方向', type: 'select', options: ['做多 (Long)', '做空 (Short)'], visible: true, category: 'trading' },
+  { key: 'entryDate', label: '進場日期時間', type: 'datetime-local', visible: true, category: 'trading' },
+  { key: 'exitDate', label: '出場日期時間', type: 'datetime-local', visible: true, category: 'trading' },
+  { key: 'timeframe', label: '時間框架', type: 'select', options: ['M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1', 'W1'], visible: true, category: 'trading' },
+  { key: 'entryPrice', label: '進場價格', type: 'number', visible: true, category: 'trading' },
+  { key: 'exitPrice', label: '出場價格', type: 'number', visible: true, category: 'trading' },
+  { key: 'lotSize', label: '交易手數', type: 'number', visible: true, category: 'trading' },
+  { key: 'stopLoss', label: '停損價格', type: 'number', visible: true, category: 'trading' },
+  { key: 'takeProfit', label: '停利價格', type: 'number', visible: true, category: 'trading' },
+  { key: 'profitLoss', label: '損益金額', type: 'number', visible: true, category: 'trading' },
+  { key: 'profitLossPct', label: '損益百分比 (%)', type: 'number', visible: true, category: 'trading' },
+  { key: 'rMultiple', label: 'R 倍數', type: 'number', visible: true, category: 'trading' },
+  { key: 'strategy', label: '策略名稱', type: 'text', visible: true, category: 'trading' },
+  { key: 'entryReason', label: '進場依據', type: 'multiselect', options: ['技術分析', '基本面', '新聞事件', '突破', '反彈', '趨勢跟隨', '逆勢交易', '型態交易'], visible: true, category: 'trading' },
+  { key: 'strategyCompliant', label: '符合策略清單', type: 'select', options: ['是 ✅', '否 ❌'], visible: true, category: 'trading' },
+  { key: 'riskControl', label: '嚴守風控 (0.5%/1%)', type: 'select', options: ['是', '否'], visible: true, category: 'trading' },
+  { key: 'overTrading', label: '是否過度交易', type: 'select', options: ['否', '是'], visible: true, category: 'trading' },
+  { key: 'emotions', label: '情緒狀態', type: 'multiselect', options: ['冷靜', '貪婪', '恐懼', '焦躁'], visible: true, category: 'trading' },
+  { key: 'mentalScore', label: '心態打分 (1-5)', type: 'select', options: ['1', '2', '3', '4', '5'], visible: true, category: 'trading' },
+  { key: 'customTags', label: '自訂標籤', type: 'multiselect', options: ['過早出場', '不符策略', '情緒化交易', '完美執行', '資金管理佳'], visible: true, category: 'trading' },
+  { key: 'screenshot', label: '交易截圖', type: 'image', visible: true, category: 'trading' },
+  { key: 'closed', label: '交易已結束', type: 'checkbox', visible: true, category: 'trading' },
+  { key: 'managedByPlan', label: '按計劃管理', type: 'select', options: ['是', '否'], visible: true, category: 'trading' },
+  
+  // 非交易日專用字段
+  { key: 'nonTradingReason', label: '未交易原因', type: 'select', options: ['市場不符合策略', '主動休息', '技術問題', '個人事務', '市場假期'], visible: true, category: 'non-trading' },
+  { key: 'marketAnalysis', label: '市場觀察', type: 'textarea', visible: true, category: 'non-trading' },
+  { key: 'learningActivity', label: '學習活動', type: 'multiselect', options: ['閱讀交易書籍', '觀看教學影片', '分析歷史數據', '練習策略', '市場研究'], visible: true, category: 'non-trading' },
+  { key: 'strategyImprovement', label: '策略改進想法', type: 'textarea', visible: true, category: 'non-trading' }
+];
+
+// 組件樣式
+const cardStyle = {
+  backgroundColor: colors.bg1,
+  border: `1px solid rgba(0, 212, 255, 0.2)`,
+  borderRadius: '20px',
+  padding: '24px',
+  backdropFilter: 'blur(20px)',
+  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+  position: 'relative',
+  overflow: 'hidden'
+};
+
+const glassCardStyle = {
+  ...cardStyle,
+  background: `linear-gradient(135deg, 
+    rgba(0, 212, 255, 0.1) 0%, 
+    rgba(139, 92, 246, 0.1) 100%
+  )`,
+  border: `1px solid rgba(255, 255, 255, 0.1)`,
+};
+
+const buttonStyle = {
+  backgroundColor: colors.brand,
+  color: colors.bg0,
+  border: 'none',
+  borderRadius: '16px',
+  padding: '12px 24px',
+  fontWeight: '700',
+  cursor: 'pointer',
+  transition: 'all 0.3s ease',
+  boxShadow: `0 0 30px rgba(0, 212, 255, 0.3)`,
+  fontSize: '14px',
+  position: 'relative',
+  overflow: 'hidden'
+};
+
+const inputStyle = {
+  backgroundColor: colors.bg0,
+  border: `2px solid rgba(0, 212, 255, 0.3)`,
+  borderRadius: '12px',
+  padding: '12px 16px',
+  color: colors.txt0,
+  fontSize: '14px',
+  outline: 'none',
+  transition: 'all 0.3s ease',
+  width: '100%'
+};
+
+// 經驗值和等級計算函數
+const calculateLevel = (xp) => {
+  for (let i = gameConfig.levels.length - 1; i >= 0; i--) {
+    if (xp >= gameConfig.levels[i].minXP) {
+      return gameConfig.levels[i];
+    }
+  }
+  return gameConfig.levels[0];
+};
+
+const getProgressToNextLevel = (xp) => {
+  const currentLevel = calculateLevel(xp);
+  const currentIndex = gameConfig.levels.findIndex(l => l.level === currentLevel.level);
+  
+  if (currentIndex === gameConfig.levels.length - 1) {
+    return { progress: 100, nextLevel: null, needed: 0 };
+  }
+  
+  const nextLevel = gameConfig.levels[currentIndex + 1];
+  const progress = ((xp - currentLevel.minXP) / (nextLevel.minXP - currentLevel.minXP)) * 100;
+  
+  return {
+    progress: Math.min(progress, 100),
+    nextLevel,
+    needed: nextLevel.minXP - xp
+  };
+};
+
+// 成就檢查函數 - 基於新的徽章系統
+const checkAchievements = (gameData, trades) => {
+  const newAchievements = [];
+  // 確保 trades 是數組
+  const validTrades = Array.isArray(trades) ? trades : [];
+  const closedTrades = validTrades.filter(trade => trade?.closed);
+  const winningTrades = closedTrades.filter(trade => trade?.profitLoss > 0);
+  
+  // 檢查每個徽章
+  Object.entries(BADGES).forEach(([badgeId, badge]) => {
+    if (Array.isArray(gameData.achievements) && gameData.achievements.includes(badgeId)) return;
+    
+    let earned = false;
+    
+    switch (badgeId) {
+      case 'first_profit':
+        earned = winningTrades.length > 0;
+        break;
+      case 'win_streak_3':
+        earned = gameData.streaks.best_win >= 3;
+        break;
+      case 'win_streak_5':
+        earned = gameData.streaks.best_win >= 5;
+        break;
+      case 'win_streak_10':
+        earned = gameData.streaks.best_win >= 10;
+        break;
+      case 'risk_master':
+        const stopLossRate = closedTrades.length > 0 ? 
+          closedTrades.filter(t => t?.stopLoss).length / closedTrades.length : 0;
+        earned = stopLossRate >= 0.95 && closedTrades.length >= 20;
+        break;
+      case 'discipline_trader':
+        const planRate = closedTrades.length > 0 ? 
+          closedTrades.filter(t => t?.managedByPlan === '是').length / closedTrades.length : 0;
+        earned = planRate >= 0.9 && closedTrades.length >= 20;
+        break;
+      case 'monthly_profit':
+        // 檢查當月回報率
+        const thisMonth = new Date();
+        const monthTrades = closedTrades.filter(trade => {
+          if (!trade?.exitDate) return false;
+          const tradeDate = new Date(trade.exitDate);
+          return tradeDate.getMonth() === thisMonth.getMonth() && 
+                 tradeDate.getFullYear() === thisMonth.getFullYear();
+        });
+        const monthlyReturn = monthTrades.reduce((sum, trade) => sum + (trade?.profitLossPct || 0), 0);
+        earned = monthlyReturn > 10;
+        break;
+      case 'big_winner':
+        earned = closedTrades.some(trade => (trade?.profitLossPct || 0) > 5);
+        break;
+      case 'analyst':
+        // 簡化處理 - 基於交易記錄中的分析數量
+        earned = closedTrades.filter(t => t?.analysis && t.analysis.length > 10).length >= 50;
+        break;
+      case 'strategist':
+        // 檢查使用的不同策略數量
+        const strategies = new Set(closedTrades.map(t => t?.strategy).filter(Boolean));
+        earned = strategies.size >= 5;
+        break;
+      case 'trader_100':
+        earned = closedTrades.length >= 100;
+        break;
+      case 'profit_10k':
+        const totalProfit = closedTrades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0);
+        earned = totalProfit >= 10000;
+        break;
+    }
+    
+    if (earned) {
+      newAchievements.push({
+        id: badgeId,
+        name: badge.name,
+        icon: badge.icon,
+        description: badge.description,
+        xp: badge.xp
+      });
+    }
+  });
+  
+  return newAchievements;
+};
+
+// 選項管理組件
+const OptionManager = ({ fields, onFieldsUpdate }) => {
+  const [editingField, setEditingField] = useState(null);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editValue, setEditValue] = useState('');
+  const [newOption, setNewOption] = useState('');
+
+  // 可自訂選項的字段
+  const customizableFields = Array.isArray(fields) ? fields.filter(field => 
+    field && field.options && (field.type === 'select' || field.type === 'multiselect')
+  ) : [];
+
+  const handleEditOption = (fieldKey, optionIndex) => {
+    const field = fields.find(f => f.key === fieldKey);
+    setEditingField(fieldKey);
+    setEditingIndex(optionIndex);
+    setEditValue(field.options[optionIndex]);
+  };
+
+  const handleSaveEdit = () => {
+    const newFields = fields.map(field => {
+      if (field.key === editingField) {
+        const newOptions = [...field.options];
+        newOptions[editingIndex] = editValue;
+        return { ...field, options: newOptions };
+      }
+      return field;
+    });
+    
+    onFieldsUpdate(newFields);
+    localStorage.setItem('tradingJournalFields', JSON.stringify(newFields));
+    setEditingField(null);
+    setEditingIndex(null);
+    setEditValue('');
+  };
+
+  const handleDeleteOption = (fieldKey, optionIndex) => {
+    console.log('=== 開始刪除選項 ===');
+    console.log('字段Key:', fieldKey);
+    console.log('選項索引:', optionIndex);
+    
+    if (window.confirm('確定要刪除這個選項嗎？')) {
+      try {
+        const newFields = fields.map(field => {
+          if (field.key === fieldKey) {
+            const newOptions = Array.isArray(field.options) ? field.options.filter((_, index) => index !== optionIndex) : [];
+            console.log('新選項列表:', newOptions);
+            return { ...field, options: newOptions };
+          }
+          return field;
+        });
+        
+        console.log('更新字段配置...');
+        onFieldsUpdate(newFields);
+        localStorage.setItem('tradingJournalFields', JSON.stringify(newFields));
+        console.log('=== 選項刪除成功 ===');
+        
+      } catch (error) {
+        console.error('刪除選項失敗:', error);
+        alert('刪除失敗，請重試');
+      }
+    }
+  };
+
+  const handleAddOption = (fieldKey) => {
+    if (!newOption.trim()) return;
+    
+    const newFields = fields.map(field => {
+      if (field.key === fieldKey) {
+        return { ...field, options: [...field.options, newOption.trim()] };
+      }
+      return field;
+    });
+    
+    onFieldsUpdate(newFields);
+    localStorage.setItem('tradingJournalFields', JSON.stringify(newFields));
+    setNewOption('');
+  };
+
+  return (
+    <div style={{...cardStyle, marginBottom: '32px'}}>
+      <h3 style={{color: colors.txt0, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+        <Settings size={20} />
+        選項管理
+        <span style={{
+          backgroundColor: colors.brand,
+          color: colors.bg0,
+          padding: '4px 8px',
+          borderRadius: '12px',
+          fontSize: '12px',
+          fontWeight: '700'
+        }}>
+          {customizableFields.length} 個可自訂字段
+        </span>
+      </h3>
+      
+      {customizableFields.length === 0 ? (
+        <div style={{
+          textAlign: 'center',
+          color: colors.txt2,
+          padding: '40px',
+          backgroundColor: colors.bg0,
+          borderRadius: '12px',
+          border: `2px dashed ${colors.txt2}`
+        }}>
+          沒有可自訂的選項字段
+        </div>
+      ) : (
+        customizableFields.map(field => (
+          <div key={field.key} style={{
+            backgroundColor: colors.bg0,
+            borderRadius: '16px',
+            padding: '20px',
+            marginBottom: '20px',
+            border: `2px solid ${colors.brand}30`
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '16px'
+            }}>
+              <div>
+                <h4 style={{
+                  color: colors.txt0,
+                  margin: '0 0 4px 0',
+                  fontSize: '18px',
+                  fontWeight: '700'
+                }}>
+                  {field.label}
+                </h4>
+                <div style={{
+                  color: colors.txt2,
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <span style={{
+                    backgroundColor: field.type === 'multiselect' ? colors.purple : colors.blue,
+                    color: colors.txt0,
+                    padding: '2px 8px',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    fontWeight: '600'
+                  }}>
+                    {field.type === 'multiselect' ? '多選' : '單選'}
+                  </span>
+                  {field.options.length} 個選項
+                </div>
+              </div>
+              
+              {/* 新增選項區域 */}
+              <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                <input
+                  type="text"
+                  placeholder="新增選項..."
+                  value={newOption}
+                  onChange={(e) => setNewOption(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddOption(field.key);
+                    }
+                  }}
+                  style={{
+                    ...inputStyle,
+                    width: '150px',
+                    padding: '8px 12px',
+                    fontSize: '13px'
+                  }}
+                />
+                <button
+                  onClick={() => handleAddOption(field.key)}
+                  disabled={!newOption.trim()}
+                  style={{
+                    ...buttonStyle,
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    opacity: newOption.trim() ? 1 : 0.5,
+                    cursor: newOption.trim() ? 'pointer' : 'not-allowed'
+                  }}
+                >
+                  <PlusCircle size={14} />
+                </button>
+              </div>
+            </div>
+            
+            {/* 選項列表 */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '12px',
+              maxHeight: '300px',
+              overflowY: 'auto'
+            }}>
+              {field.options.map((option, index) => (
+                <div key={index} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 12px',
+                  backgroundColor: colors.bg2,
+                  borderRadius: '8px',
+                  border: `1px solid ${colors.brand}20`
+                }}>
+                  {editingField === field.key && editingIndex === index ? (
+                    <>
+                      <input
+                        type="text"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') handleSaveEdit();
+                          if (e.key === 'Escape') {
+                            setEditingField(null);
+                            setEditingIndex(null);
+                          }
+                        }}
+                        style={{
+                          ...inputStyle,
+                          flex: 1,
+                          padding: '6px 8px',
+                          fontSize: '13px',
+                          backgroundColor: colors.bg0
+                        }}
+                        autoFocus
+                      />
+                      <button
+                        onClick={handleSaveEdit}
+                        style={{
+                          padding: '4px',
+                          backgroundColor: colors.ok,
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          color: colors.txt0
+                        }}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingField(null);
+                          setEditingIndex(null);
+                        }}
+                        style={{
+                          padding: '4px',
+                          backgroundColor: colors.err,
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          color: colors.txt0
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{
+                        flex: 1,
+                        color: colors.txt0,
+                        fontSize: '13px',
+                        fontWeight: '500'
+                      }}>
+                        {option}
+                      </span>
+                      <button
+                        onClick={() => handleEditOption(field.key, index)}
+                        style={{
+                          padding: '4px',
+                          backgroundColor: 'transparent',
+                          border: `1px solid ${colors.brand}`,
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          color: colors.brand,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <Edit3 size={12} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteOption(field.key, index)}
+                        style={{
+                          padding: '4px',
+                          backgroundColor: 'transparent',
+                          border: `1px solid ${colors.err}`,
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          color: colors.err,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+};
+
+// 自訂字段創建組件
+const CustomFieldCreator = ({ fields, onFieldsUpdate }) => {
+  const [fieldData, setFieldData] = useState({
+    key: '',
+    label: '',
+    type: 'text',
+    options: [],
+    visible: true,
+    required: false
+  });
+  const [newOption, setNewOption] = useState('');
+  const [showCreator, setShowCreator] = useState(false);
+
+  const fieldTypes = [
+    { value: 'text', label: '文本', needsOptions: false },
+    { value: 'number', label: '數字', needsOptions: false },
+    { value: 'textarea', label: '多行文本', needsOptions: false },
+    { value: 'select', label: '單選下拉', needsOptions: true },
+    { value: 'multiselect', label: '多選標籤', needsOptions: true },
+    { value: 'checkbox', label: '複選框', needsOptions: false },
+    { value: 'date', label: '日期', needsOptions: false },
+    { value: 'datetime-local', label: '日期時間', needsOptions: false }
+  ];
+
+  const selectedFieldType = fieldTypes.find(type => type.value === fieldData.type);
+
+  const handleAddOption = () => {
+    if (!newOption.trim()) return;
+    setFieldData({
+      ...fieldData,
+      options: [...fieldData.options, newOption.trim()]
+    });
+    setNewOption('');
+  };
+
+  const handleRemoveOption = (index) => {
+    setFieldData({
+      ...fieldData,
+      options: Array.isArray(fieldData.options) ? fieldData.options.filter((_, i) => i !== index) : []
+    });
+  };
+
+  const handleCreateField = () => {
+    if (!fieldData.key.trim() || !fieldData.label.trim()) {
+      alert('請填入字段標識符和標籤');
+      return;
+    }
+
+    // 檢查字段標識符是否已存在
+    if (fields.some(field => field.key === fieldData.key)) {
+      alert('字段標識符已存在，請使用其他名稱');
+      return;
+    }
+
+    // 如果是選擇類型，檢查是否有選項
+    if (selectedFieldType.needsOptions && fieldData.options.length === 0) {
+      alert('選擇類型字段需要至少一個選項');
+      return;
+    }
+
+    const newField = {
+      ...fieldData,
+      key: fieldData.key.toLowerCase().replace(/[^a-z0-9]/g, '_')
+    };
+
+    const newFields = [...fields, newField];
+    onFieldsUpdate(newFields);
+    localStorage.setItem('tradingJournalFields', JSON.stringify(newFields));
+
+    // 重置表單
+    setFieldData({
+      key: '',
+      label: '',
+      type: 'text',
+      options: [],
+      visible: true,
+      required: false
+    });
+    setNewOption('');
+    setShowCreator(false);
+  };
+
+  return (
+    <div style={{...cardStyle, marginBottom: '32px'}}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '24px'
+      }}>
+        <h3 style={{color: colors.txt0, margin: 0, display: 'flex', alignItems: 'center', gap: '8px'}}>
+          <PlusCircle size={20} />
+          自訂字段創建
+        </h3>
+        <button
+          onClick={() => setShowCreator(!showCreator)}
+          style={{
+            ...buttonStyle,
+            backgroundColor: showCreator ? colors.warn : colors.brand,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            fontSize: '14px'
+          }}
+        >
+          {showCreator ? '取消創建' : '創建新字段'}
+        </button>
+      </div>
+
+      {showCreator && (
+        <div style={{
+          backgroundColor: colors.bg0,
+          borderRadius: '16px',
+          padding: '24px',
+          border: `2px solid ${colors.brand}30`
+        }}>
+          <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px'}}>
+            {/* 基本設置 */}
+            <div>
+              <label style={{color: colors.txt0, display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600'}}>
+                字段標識符 <span style={{color: colors.err}}>*</span>
+              </label>
+              <input
+                type="text"
+                value={fieldData.key}
+                onChange={(e) => setFieldData({...fieldData, key: e.target.value})}
+                placeholder="例如: my_custom_field"
+                style={inputStyle}
+              />
+              <div style={{color: colors.txt2, fontSize: '12px', marginTop: '4px'}}>
+                用於內部識別，只能包含字母、數字和底線
+              </div>
+            </div>
+
+            <div>
+              <label style={{color: colors.txt0, display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600'}}>
+                字段標籤 <span style={{color: colors.err}}>*</span>
+              </label>
+              <input
+                type="text"
+                value={fieldData.label}
+                onChange={(e) => setFieldData({...fieldData, label: e.target.value})}
+                placeholder="例如: 我的自訂字段"
+                style={inputStyle}
+              />
+              <div style={{color: colors.txt2, fontSize: '12px', marginTop: '4px'}}>
+                顯示在表單中的字段名稱
+              </div>
+            </div>
+
+            <div>
+              <label style={{color: colors.txt0, display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600'}}>
+                字段類型
+              </label>
+              <select
+                value={fieldData.type}
+                onChange={(e) => setFieldData({...fieldData, type: e.target.value, options: []})}
+                style={inputStyle}
+              >
+                {fieldTypes.map(type => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 設置選項 */}
+            <div>
+              <label style={{color: colors.txt0, display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600'}}>
+                設置
+              </label>
+              <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                <label style={{display: 'flex', alignItems: 'center', gap: '8px', color: colors.txt0, cursor: 'pointer'}}>
+                  <input
+                    type="checkbox"
+                    checked={fieldData.visible}
+                    onChange={(e) => setFieldData({...fieldData, visible: e.target.checked})}
+                    style={{accentColor: colors.brand}}
+                  />
+                  <span style={{fontSize: '14px'}}>在表單中顯示</span>
+                </label>
+                <label style={{display: 'flex', alignItems: 'center', gap: '8px', color: colors.txt0, cursor: 'pointer'}}>
+                  <input
+                    type="checkbox"
+                    checked={fieldData.required}
+                    onChange={(e) => setFieldData({...fieldData, required: e.target.checked})}
+                    style={{accentColor: colors.brand}}
+                  />
+                  <span style={{fontSize: '14px'}}>必填字段</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* 選項配置 */}
+          {selectedFieldType && selectedFieldType.needsOptions && (
+            <div style={{marginTop: '24px'}}>
+              <h4 style={{color: colors.txt0, marginBottom: '16px', fontSize: '16px', fontWeight: '600'}}>
+                配置選項 <span style={{color: colors.err}}>*</span>
+              </h4>
+              
+              <div style={{display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'center'}}>
+                <input
+                  type="text"
+                  value={newOption}
+                  onChange={(e) => setNewOption(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') handleAddOption();
+                  }}
+                  placeholder="輸入新選項..."
+                  style={{...inputStyle, flex: 1}}
+                />
+                <button
+                  onClick={handleAddOption}
+                  disabled={!newOption.trim()}
+                  style={{
+                    ...buttonStyle,
+                    padding: '12px 16px',
+                    opacity: newOption.trim() ? 1 : 0.5,
+                    cursor: newOption.trim() ? 'pointer' : 'not-allowed'
+                  }}
+                >
+                  新增選項
+                </button>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '8px',
+                minHeight: '40px',
+                padding: '12px',
+                backgroundColor: colors.bg2,
+                borderRadius: '8px',
+                border: `2px dashed ${fieldData.options.length > 0 ? colors.ok : colors.txt2}`
+              }}>
+                {fieldData.options.length === 0 ? (
+                  <span style={{color: colors.txt2, fontSize: '14px'}}>
+                    還沒有選項，請新增至少一個選項
+                  </span>
+                ) : (
+                  fieldData.options.map((option, index) => (
+                    <span key={index} style={{
+                      backgroundColor: colors.brand,
+                      color: colors.bg0,
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      {option}
+                      <button
+                        onClick={() => handleRemoveOption(index)}
+                        style={{
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          color: colors.bg0,
+                          cursor: 'pointer',
+                          padding: '2px',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 創建按鈕 */}
+          <div style={{display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px'}}>
+            <button
+              onClick={() => setShowCreator(false)}
+              style={{
+                ...buttonStyle,
+                backgroundColor: colors.bg2,
+                color: colors.txt0,
+                boxShadow: 'none'
+              }}
+            >
+              取消
+            </button>
+            <button
+              onClick={handleCreateField}
+              style={{
+                ...buttonStyle,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <PlusCircle size={16} />
+              創建字段
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 字段顯示控制組件
+const FieldVisibilityManager = ({ fields, onFieldsUpdate }) => {
+  const handleToggleVisibility = (fieldKey) => {
+    const newFields = fields.map(field => {
+      if (field.key === fieldKey) {
+        return { ...field, visible: !field.visible };
+      }
+      return field;
+    });
+    
+    onFieldsUpdate(newFields);
+    localStorage.setItem('tradingJournalFields', JSON.stringify(newFields));
+  };
+
+  const handleDeleteCustomField = (fieldKey) => {
+    // 只允許刪除自訂字段（不在預設字段列表中的）
+    const isCustomField = !defaultFields.some(field => field.key === fieldKey);
+    
+    if (!isCustomField) {
+      alert('無法刪除系統預設字段');
+      return;
+    }
+
+    if (window.confirm('確定要刪除這個自訂字段嗎？相關的交易數據也會被移除。')) {
+      const newFields = Array.isArray(fields) ? fields.filter(field => field && field.key !== fieldKey) : [];
+      onFieldsUpdate(newFields);
+      localStorage.setItem('tradingJournalFields', JSON.stringify(newFields));
+    }
+  };
+
+  // 分類字段
+  const systemFields = Array.isArray(fields) ? fields.filter(field => 
+    field && Array.isArray(defaultFields) && defaultFields.some(defaultField => defaultField && defaultField.key === field.key)
+  ) : [];
+  const customFields = Array.isArray(fields) ? fields.filter(field => 
+    field && Array.isArray(defaultFields) && !defaultFields.some(defaultField => defaultField && defaultField.key === field.key)
+  ) : [];
+
+  return (
+    <div style={cardStyle}>
+      <h3 style={{color: colors.txt0, marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+        <Eye size={20} />
+        字段顯示控制
+        <span style={{
+          backgroundColor: colors.ok,
+          color: colors.bg0,
+          padding: '4px 8px',
+          borderRadius: '12px',
+          fontSize: '12px',
+          fontWeight: '700'
+        }}>
+          {Array.isArray(fields) ? fields.filter(f => f && f.visible).length : 0}/{Array.isArray(fields) ? fields.length : 0} 顯示中
+        </span>
+      </h3>
+
+      {/* 系統字段 */}
+      {systemFields.length > 0 && (
+        <div style={{marginBottom: '32px'}}>
+          <h4 style={{
+            color: colors.txt0,
+            marginBottom: '16px',
+            fontSize: '16px',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <Shield size={16} />
+            系統字段
+            <span style={{
+              backgroundColor: colors.blue,
+              color: colors.txt0,
+              padding: '2px 8px',
+              borderRadius: '8px',
+              fontSize: '11px'
+            }}>
+              {systemFields.length}
+            </span>
+          </h4>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '12px'
+          }}>
+            {systemFields.map(field => (
+              <div key={field.key} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                backgroundColor: field.visible ? colors.bg0 : colors.bg2,
+                borderRadius: '12px',
+                border: `2px solid ${field.visible ? colors.ok : colors.txt2}30`,
+                transition: 'all 0.3s ease'
+              }}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                  <button
+                    onClick={() => handleToggleVisibility(field.key)}
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      color: field.visible ? colors.ok : colors.txt2,
+                      cursor: 'pointer',
+                      padding: '4px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {field.visible ? <Eye size={18} /> : <EyeOff size={18} />}
+                  </button>
+                  <div>
+                    <div style={{
+                      color: field.visible ? colors.txt0 : colors.txt2,
+                      fontSize: '14px',
+                      fontWeight: '600'
+                    }}>
+                      {field.label}
+                    </div>
+                    <div style={{
+                      color: colors.txt2,
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <span style={{
+                        backgroundColor: field.type === 'multiselect' ? colors.purple : 
+                                       field.type === 'select' ? colors.blue :
+                                       field.type === 'textarea' ? colors.orange : colors.cyan,
+                        color: colors.txt0,
+                        padding: '2px 6px',
+                        borderRadius: '6px',
+                        fontSize: '10px',
+                        fontWeight: '600'
+                      }}>
+                        {field.type}
+                      </span>
+                      {field.required && (
+                        <span style={{
+                          backgroundColor: colors.err,
+                          color: colors.txt0,
+                          padding: '2px 6px',
+                          borderRadius: '6px',
+                          fontSize: '10px',
+                          fontWeight: '600'
+                        }}>
+                          必填
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div style={{
+                  color: field.visible ? colors.ok : colors.txt2,
+                  fontSize: '12px',
+                  fontWeight: '600'
+                }}>
+                  {field.visible ? '顯示中' : '已隱藏'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 自訂字段 */}
+      {customFields.length > 0 && (
+        <div>
+          <h4 style={{
+            color: colors.txt0,
+            marginBottom: '16px',
+            fontSize: '16px',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <Star size={16} />
+            自訂字段
+            <span style={{
+              backgroundColor: colors.legendary,
+              color: colors.txt0,
+              padding: '2px 8px',
+              borderRadius: '8px',
+              fontSize: '11px'
+            }}>
+              {customFields.length}
+            </span>
+          </h4>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '12px'
+          }}>
+            {customFields.map(field => (
+              <div key={field.key} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                backgroundColor: field.visible ? colors.bg0 : colors.bg2,
+                borderRadius: '12px',
+                border: `2px solid ${field.visible ? colors.legendary : colors.txt2}30`,
+                transition: 'all 0.3s ease'
+              }}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                  <button
+                    onClick={() => handleToggleVisibility(field.key)}
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      color: field.visible ? colors.ok : colors.txt2,
+                      cursor: 'pointer',
+                      padding: '4px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {field.visible ? <Eye size={18} /> : <EyeOff size={18} />}
+                  </button>
+                  <div>
+                    <div style={{
+                      color: field.visible ? colors.txt0 : colors.txt2,
+                      fontSize: '14px',
+                      fontWeight: '600'
+                    }}>
+                      {field.label}
+                    </div>
+                    <div style={{
+                      color: colors.txt2,
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <span style={{
+                        backgroundColor: colors.legendary,
+                        color: colors.txt0,
+                        padding: '2px 6px',
+                        borderRadius: '6px',
+                        fontSize: '10px',
+                        fontWeight: '600'
+                      }}>
+                        自訂
+                      </span>
+                      <span style={{
+                        backgroundColor: field.type === 'multiselect' ? colors.purple : 
+                                       field.type === 'select' ? colors.blue :
+                                       field.type === 'textarea' ? colors.orange : colors.cyan,
+                        color: colors.txt0,
+                        padding: '2px 6px',
+                        borderRadius: '6px',
+                        fontSize: '10px',
+                        fontWeight: '600'
+                      }}>
+                        {field.type}
+                      </span>
+                      {field.required && (
+                        <span style={{
+                          backgroundColor: colors.err,
+                          color: colors.txt0,
+                          padding: '2px 6px',
+                          borderRadius: '6px',
+                          fontSize: '10px',
+                          fontWeight: '600'
+                        }}>
+                          必填
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  <div style={{
+                    color: field.visible ? colors.ok : colors.txt2,
+                    fontSize: '12px',
+                    fontWeight: '600'
+                  }}>
+                    {field.visible ? '顯示中' : '已隱藏'}
+                  </div>
+                  <button
+                    onClick={() => handleDeleteCustomField(field.key)}
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: `1px solid ${colors.err}`,
+                      borderRadius: '6px',
+                      color: colors.err,
+                      cursor: 'pointer',
+                      padding: '4px 6px',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <Trash2 size={12} />
+                    刪除
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {customFields.length === 0 && (
+        <div style={{
+          textAlign: 'center',
+          color: colors.txt2,
+          padding: '40px',
+          backgroundColor: colors.bg0,
+          borderRadius: '12px',
+          border: `2px dashed ${colors.txt2}`
+        }}>
+          還沒有自訂字段，前往「自訂字段創建」新增專屬字段
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 玩家資料卡組件
+const PlayerProfile = ({ gameData, onUpdate }) => {
+  const currentLevel = calculateLevel(gameData.xp);
+  const levelProgress = getProgressToNextLevel(gameData.xp);
+  
+  return (
+    <div style={{
+      ...glassCardStyle,
+      background: `linear-gradient(135deg, ${currentLevel.color}20, ${colors.bg1})`,
+      marginBottom: '24px'
+    }}>
+      <div style={{display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px'}}>
+        <div style={{
+          width: '80px',
+          height: '80px',
+          borderRadius: '50%',
+          background: `linear-gradient(135deg, ${currentLevel.color}, ${colors.brand})`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '32px',
+          boxShadow: `0 0 30px ${currentLevel.color}50`
+        }}>
+          {currentLevel.icon}
+        </div>
+        
+        <div style={{ flex: 1 }}>
+          <div style={{
+            color: currentLevel.color,
+            fontSize: '14px',
+            fontWeight: '600',
+            marginBottom: '4px'
+          }}>
+            等級 {currentLevel.level}
+          </div>
+          <h2 style={{
+            color: colors.txt0,
+            margin: '0 0 8px 0',
+            fontSize: '24px',
+            fontWeight: '700'
+          }}>
+            {currentLevel.title}
+          </h2>
+          
+          <div style={{ marginBottom: '8px' }}>
+            <div style={{
+              backgroundColor: colors.bg0,
+              borderRadius: '12px',
+              padding: '4px',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                background: `linear-gradient(90deg, ${currentLevel.color}, ${colors.brand})`,
+                height: '8px',
+                borderRadius: '8px',
+                width: `${levelProgress.progress}%`,
+                transition: 'width 0.8s ease',
+                boxShadow: `0 0 10px ${currentLevel.color}80`
+              }} />
+            </div>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: '12px',
+              color: colors.txt2,
+              marginTop: '4px'
+            }}>
+              <span>XP: {gameData.xp}</span>
+              {levelProgress.nextLevel && (
+                <span>下一級還需 {levelProgress.needed} XP</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          gap: '16px',
+          alignItems: 'center'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ color: colors.gold, fontSize: '24px', fontWeight: '700' }}>
+              {gameData.achievements.length}
+            </div>
+            <div style={{ color: colors.txt2, fontSize: '12px' }}>成就</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ color: colors.brand, fontSize: '24px', fontWeight: '700' }}>
+              {gameData.streaks.best_win}
+            </div>
+            <div style={{ color: colors.txt2, fontSize: '12px' }}>最佳連勝</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 成就系統組件
+const AchievementBadge = ({ achievement, earned = false, progress = 0 }) => {
+  const rarityColors = {
+    common: colors.common,
+    rare: colors.rare,
+    epic: colors.epic,
+    legendary: colors.legendary
+  };
+
+  return (
+    <div style={{
+      ...cardStyle,
+      padding: '16px',
+      opacity: earned ? 1 : 0.6,
+      transform: earned ? 'scale(1.05)' : 'scale(1)',
+      transition: 'all 0.3s ease',
+      border: `2px solid ${rarityColors[achievement.rarity]}`,
+      background: earned 
+        ? `linear-gradient(135deg, ${rarityColors[achievement.rarity]}20, ${colors.bg1})`
+        : colors.bg2
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        marginBottom: '8px'
+      }}>
+        <div style={{
+          fontSize: '24px',
+          filter: earned ? 'none' : 'grayscale(100%)'
+        }}>
+          {achievement.icon}
+        </div>
+        <div>
+          <div style={{
+            color: earned ? rarityColors[achievement.rarity] : colors.txt2,
+            fontSize: '14px',
+            fontWeight: '700'
+          }}>
+            {achievement.name}
+          </div>
+          <div style={{
+            color: colors.txt2,
+            fontSize: '12px'
+          }}>
+            +{achievement.xp} XP
+          </div>
+        </div>
+      </div>
+      <div style={{
+        color: colors.txt1,
+        fontSize: '12px',
+        lineHeight: '1.4'
+      }}>
+        {achievement.desc}
+      </div>
+      
+      {!earned && progress > 0 && (
+        <div style={{
+          marginTop: '8px',
+          backgroundColor: colors.bg0,
+          borderRadius: '8px',
+          padding: '2px',
+          position: 'relative'
+        }}>
+          <div style={{
+            background: `linear-gradient(90deg, ${rarityColors[achievement.rarity]}, ${colors.brand})`,
+            height: '4px',
+            borderRadius: '4px',
+            width: `${progress}%`,
+            transition: 'width 0.3s ease'
+          }} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 技能樹組件
+const SkillTree = ({ gameData, onUpgrade }) => {
+  return (
+    <div style={cardStyle}>
+      <h3 style={{
+        color: colors.txt0,
+        marginBottom: '24px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        fontSize: '20px'
+      }}>
+        <Brain size={20} />
+        技能樹
+      </h3>
+      
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: '20px'
+      }}>
+        {gameConfig.skills.map(skill => {
+          const currentLevel = gameData.skills[skill.id] || 1;
+          const maxLevel = skill.levels.length;
+          
+          return (
+            <div key={skill.id} style={{
+              padding: '20px',
+              backgroundColor: colors.bg0,
+              borderRadius: '16px',
+              border: `2px solid ${colors.brand}40`
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: '16px'
+              }}>
+                <div style={{ fontSize: '24px' }}>{skill.icon}</div>
+                <div>
+                  <h4 style={{
+                    color: colors.txt0,
+                    margin: 0,
+                    fontSize: '16px',
+                    fontWeight: '700'
+                  }}>
+                    {skill.name}
+                  </h4>
+                  <div style={{
+                    color: colors.txt2,
+                    fontSize: '12px'
+                  }}>
+                    等級 {currentLevel}/{maxLevel}
+                  </div>
+                </div>
+              </div>
+              
+              <div style={{ marginBottom: '16px' }}>
+                {skill.levels.map((levelInfo, index) => {
+                  const level = index + 1;
+                  const isUnlocked = level <= currentLevel;
+                  const canUpgrade = level === currentLevel + 1 && gameData.xp >= levelInfo.xpCost;
+                  
+                  return (
+                    <div key={level} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '8px',
+                      borderRadius: '8px',
+                      backgroundColor: isUnlocked ? colors.bg2 : 'transparent',
+                      border: `1px solid ${isUnlocked ? colors.brand : colors.txt2}40`,
+                      marginBottom: '8px',
+                      opacity: isUnlocked ? 1 : 0.6
+                    }}>
+                      <div style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        backgroundColor: isUnlocked ? colors.brand : colors.txt2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        color: colors.bg0,
+                        fontWeight: '700'
+                      }}>
+                        {level}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          color: isUnlocked ? colors.txt0 : colors.txt2,
+                          fontSize: '14px',
+                          fontWeight: '600'
+                        }}>
+                          {levelInfo.name}
+                        </div>
+                        <div style={{
+                          color: colors.txt2,
+                          fontSize: '12px'
+                        }}>
+                          {levelInfo.benefit}
+                        </div>
+                      </div>
+                      {canUpgrade && (
+                        <button
+                          onClick={() => onUpgrade(skill.id, level)}
+                          style={{
+                            ...buttonStyle,
+                            padding: '6px 12px',
+                            fontSize: '12px'
+                          }}
+                        >
+                          升級 ({levelInfo.xpCost} XP)
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// 每日任務組件
+const DailyQuests = ({ onComplete }) => {
+  const [quests] = useState([
+    {
+      id: 'daily_record',
+      title: '記錄一筆交易',
+      desc: '今天記錄至少一筆交易',
+      reward: 20,
+      progress: 0,
+      target: 1,
+      icon: '📝'
+    },
+    {
+      id: 'review_trades',
+      title: '檢視交易記錄',
+      desc: '檢視並分析過去的交易',
+      reward: 15,
+      progress: 0,
+      target: 1,
+      icon: '🔍'
+    },
+    {
+      id: 'plan_tomorrow',
+      title: '制定明日計劃',
+      desc: '為明天的交易制定計劃',
+      reward: 25,
+      progress: 0,
+      target: 1,
+      icon: '📋'
+    }
+  ]);
+
+  return (
+    <div style={cardStyle}>
+      <h3 style={{
+        color: colors.txt0,
+        marginBottom: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
+      }}>
+        <Target size={20} />
+        每日任務
+        <div style={{
+          backgroundColor: colors.warn,
+          color: colors.txt0,
+          padding: '4px 8px',
+          borderRadius: '12px',
+          fontSize: '12px',
+          fontWeight: '700'
+        }}>
+          23:59
+        </div>
+      </h3>
+      
+      <div style={{display: 'grid', gap: '16px'}}>
+        {quests.map(quest => {
+          const isCompleted = quest.progress >= quest.target;
+          const progressPercent = (quest.progress / quest.target) * 100;
+          
+          return (
+            <div key={quest.id} style={{
+              padding: '16px',
+              backgroundColor: colors.bg0,
+              borderRadius: '12px',
+              border: `2px solid ${isCompleted ? colors.ok : colors.brand}40`,
+              opacity: isCompleted ? 0.7 : 1
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: '12px'
+              }}>
+                <div style={{ fontSize: '24px' }}>{quest.icon}</div>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{
+                    color: colors.txt0,
+                    margin: '0 0 4px 0',
+                    fontSize: '16px',
+                    fontWeight: '700'
+                  }}>
+                    {quest.title}
+                  </h4>
+                  <p style={{
+                    color: colors.txt2,
+                    margin: 0,
+                    fontSize: '14px'
+                  }}>
+                    {quest.desc}
+                  </p>
+                </div>
+                <div style={{
+                  backgroundColor: colors.gold,
+                  color: colors.bg0,
+                  padding: '6px 12px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <Star size={14} />
+                  +{quest.reward}
+                </div>
+              </div>
+              
+              <div style={{
+                backgroundColor: colors.bg2,
+                borderRadius: '8px',
+                padding: '4px',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  background: isCompleted 
+                    ? `linear-gradient(90deg, ${colors.ok}, ${colors.lime})` 
+                    : `linear-gradient(90deg, ${colors.brand}, ${colors.cyan})`,
+                  height: '8px',
+                  borderRadius: '6px',
+                  width: `${Math.min(progressPercent, 100)}%`,
+                  transition: 'width 0.5s ease'
+                }} />
+              </div>
+              
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginTop: '8px'
+              }}>
+                <span style={{
+                  color: colors.txt2,
+                  fontSize: '12px'
+                }}>
+                  進度: {quest.progress}/{quest.target}
+                </span>
+                {isCompleted && (
+                  <span style={{
+                    color: colors.ok,
+                    fontSize: '12px',
+                    fontWeight: '700'
+                  }}>
+                    ✅ 已完成
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// 交易對選擇器組件
+const TradingPairSelect = ({ value, onChange }) => {
+  const [category, setCategory] = useState('外匯');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredPairs = tradingPairs[category].filter(pair =>
+    pair.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+        {Object.keys(tradingPairs).map(cat => (
+          <button
+            key={cat}
+            onClick={() => setCategory(cat)}
+            style={{
+              ...buttonStyle,
+              backgroundColor: category === cat ? colors.brand : colors.bg2,
+              color: category === cat ? colors.bg0 : colors.txt0,
+              boxShadow: category === cat ? `0 0 20px rgba(0, 212, 255, 0.3)` : 'none',
+              padding: '8px 16px',
+              fontSize: '12px'
+            }}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+      <input
+        type="text"
+        placeholder="搜尋交易對..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        style={{ ...inputStyle, marginBottom: '12px' }}
+      />
+      <select
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        style={inputStyle}
+      >
+        <option value="">請選擇交易對象</option>
+        {filteredPairs.map(pair => (
+          <option key={pair} value={pair}>{pair}</option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+// 圖片上傳組件 - 支援上傳最多5張圖片
+const ImageUpload = ({ value, onChange, label }) => {
+  const [previews, setPreviews] = useState(value || []);
+  const maxImages = 5;
+
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    const remainingSlots = maxImages - previews.length;
+    const filesToProcess = files.slice(0, remainingSlots);
+
+    filesToProcess.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const imageData = event.target.result;
+        const newPreviews = [...previews, imageData];
+        setPreviews(newPreviews);
+        onChange(newPreviews);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 重置input值以允許重複選擇同一文件
+    e.target.value = '';
+  };
+
+  const removeImage = (indexToRemove) => {
+    const newPreviews = previews.filter((_, index) => index !== indexToRemove);
+    setPreviews(newPreviews);
+    onChange(newPreviews.length > 0 ? newPreviews : null);
+  };
+
+  return (
+    <div>
+      <div style={{
+        marginBottom: '16px',
+        color: colors.txt1,
+        fontSize: '14px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <span>{label}</span>
+        <span style={{
+          backgroundColor: colors.brand,
+          color: colors.bg0,
+          padding: '4px 8px',
+          borderRadius: '12px',
+          fontSize: '12px',
+          fontWeight: '700'
+        }}>
+          {previews.length}/{maxImages}
+        </span>
+      </div>
+      
+      {/* 圖片預覽區域 */}
+      {previews.length > 0 && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+          gap: '12px',
+          marginBottom: '16px'
+        }}>
+          {previews.map((preview, index) => (
+            <div key={index} style={{ 
+              position: 'relative', 
+              display: 'inline-block',
+              borderRadius: '12px',
+              overflow: 'hidden'
+            }}>
+              <img
+                src={preview}
+                alt={`交易截圖 ${index + 1}`}
+                style={{
+                  width: '100%',
+                  height: '120px',
+                  objectFit: 'cover',
+                  border: `2px solid ${colors.brand}`,
+                  borderRadius: '12px'
+                }}
+              />
+              <button
+                onClick={() => removeImage(index)}
+                style={{
+                  position: 'absolute',
+                  top: '8px',
+                  right: '8px',
+                  backgroundColor: colors.err,
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+                }}
+              >
+                <X size={12} />
+              </button>
+              <div style={{
+                position: 'absolute',
+                bottom: '8px',
+                left: '8px',
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                color: 'white',
+                padding: '4px 8px',
+                borderRadius: '8px',
+                fontSize: '12px',
+                fontWeight: '600'
+              }}>
+                {index + 1}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 上傳按鈕 */}
+      {previews.length < maxImages && (
+        <label style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: `2px dashed ${colors.brand}`,
+          borderRadius: '12px',
+          padding: '40px',
+          cursor: 'pointer',
+          backgroundColor: `rgba(0, 212, 255, 0.05)`,
+          transition: 'all 0.3s ease'
+        }}>
+          <Upload size={32} color={colors.brand} />
+          <span style={{ color: colors.brand, marginTop: '8px', fontSize: '14px' }}>
+            點擊上傳交易截圖 ({maxImages - previews.length} 個剩餘)
+          </span>
+          <span style={{ color: colors.txt2, marginTop: '4px', fontSize: '12px' }}>
+            支援多張圖片選擇
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+          />
+        </label>
+      )}
+    </div>
+  );
+};
+
+// 交易記錄卡片組件
+const TradeCard = ({ trade, onEdit, onDelete, gameData }) => {
+  const profitLoss = trade.profitLoss || 0;
+  const resultColor = profitLoss > 0 ? colors.ok : profitLoss < 0 ? colors.err : colors.warn;
+  const directionIcon = trade.direction?.includes('Long') || trade.direction?.includes('多') ? 
+    <TrendingUp size={16} /> : <TrendingDown size={16} />;
+  
+  // 計算這筆交易獲得的XP
+  const getTradeXP = (trade) => {
+    let xp = 10; // 基礎XP
+    if (trade.profitLoss > 0) xp += 20; // 盈利獎勵
+    if (trade.managedByPlan === '是') xp += 15; // 計劃執行獎勵
+    if (trade.emotions?.includes('冷靜')) xp += 10; // 情緒控制獎勵
+    return xp;
+  };
+
+  const tradeXP = getTradeXP(trade);
+
+  // 緊急刪除按鈕 - 直接刪除
+  const handleEmergencyDelete = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('緊急刪除按鈕被點擊！');
+    console.log('交易ID:', trade.id);
+    if (typeof onDelete === 'function') {
+      onDelete(trade.id);
+    } else {
+      alert('onDelete 函數不存在！');
+    }
+  };
+
+  // 處理編輯按鈕點擊
+  const handleEditClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onEdit(trade);
+  };
+  
+  return (
+    <div style={{
+      ...cardStyle, 
+      marginBottom: '20px',
+      background: `linear-gradient(135deg, 
+        ${profitLoss > 0 ? 'rgba(57, 217, 138, 0.1)' : 'rgba(233, 57, 70, 0.1)'} 0%, 
+        ${colors.bg1} 100%
+      )`,
+      position: 'relative',
+      zIndex: 1
+    }}>
+      {/* XP 獲得提示 */}
+      {trade.closed && (
+        <div style={{
+          position: 'absolute',
+          top: '12px',
+          right: '12px',
+          backgroundColor: colors.gold,
+          color: colors.bg0,
+          padding: '4px 8px',
+          borderRadius: '12px',
+          fontSize: '12px',
+          fontWeight: '700',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          zIndex: 5
+        }}>
+          <Star size={12} />
+          +{tradeXP} XP
+        </div>
+      )}
+
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px'}}>
+        <div style={{ flex: 1 }}>
+          <h3 style={{color: colors.txt0, margin: '0 0 12px 0', fontSize: '20px', fontWeight: '700'}}>
+            {trade.title || '未命名交易'}
+          </h3>
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap'}}>
+            <span style={{
+              backgroundColor: colors.blue,
+              color: colors.txt0,
+              padding: '6px 16px',
+              borderRadius: '20px',
+              fontSize: '13px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              {directionIcon}
+              {trade.pair} {trade.direction}
+            </span>
+            {trade.riskGrading && (
+              <span style={{
+                backgroundColor: trade.riskGrading === '低風險' ? colors.ok : 
+                               trade.riskGrading === '高風險' ? colors.err : colors.warn,
+                color: colors.bg0,
+                padding: '6px 16px',
+                borderRadius: '20px',
+                fontSize: '13px',
+                fontWeight: '600'
+              }}>
+                {trade.riskGrading}
+              </span>
+            )}
+            {trade.closed && (
+              <span style={{
+                backgroundColor: colors.purple,
+                color: colors.txt0,
+                padding: '6px 16px',
+                borderRadius: '20px',
+                fontSize: '13px',
+                fontWeight: '600'
+              }}>
+                已結束
+              </span>
+            )}
+          </div>
+        </div>
+        <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{color: resultColor, fontSize: '24px', fontWeight: '700'}}>
+              {profitLoss > 0 ? '+' : ''}{profitLoss.toFixed(2)}
+            </div>
+            {trade.profitLossPct && (
+              <div style={{color: resultColor, fontSize: '14px'}}>
+                ({trade.profitLossPct > 0 ? '+' : ''}{trade.profitLossPct.toFixed(2)}%)
+              </div>
+            )}
+          </div>
+          <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+            <button 
+              onClick={handleEditClick}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: colors.brand + '20',
+                border: `1px solid ${colors.brand}`,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                color: colors.brand,
+                fontSize: '12px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <Edit3 size={14} />
+              編輯
+            </button>
+            <button 
+              onClick={handleEmergencyDelete}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: colors.err + '20',
+                border: `1px solid ${colors.err}`,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                color: colors.err,
+                fontSize: '12px',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <Trash2 size={14} />
+              刪除
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* 交易截圖 - 支援多張圖片 */}
+      {trade.screenshot && (
+        <div style={{ marginBottom: '16px' }}>
+          {Array.isArray(trade.screenshot) ? (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: trade.screenshot.length === 1 ? '1fr' : 
+                                 trade.screenshot.length === 2 ? 'repeat(2, 1fr)' :
+                                 'repeat(auto-fit, minmax(150px, 1fr))',
+              gap: '12px'
+            }}>
+              {trade.screenshot.map((image, index) => (
+                <img
+                  key={index}
+                  src={image}
+                  alt={`交易截圖 ${index + 1}`}
+                  style={{
+                    width: '100%',
+                    height: trade.screenshot.length === 1 ? '200px' : '120px',
+                    objectFit: 'cover',
+                    borderRadius: '12px',
+                    border: `2px solid rgba(0, 212, 255, 0.2)`,
+                    cursor: 'pointer',
+                    transition: 'transform 0.3s ease'
+                  }}
+                  onClick={() => {
+                    // 簡單的圖片放大效果
+                    const modal = document.createElement('div');
+                    modal.style.cssText = `
+                      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                      background: rgba(0,0,0,0.9); display: flex; align-items: center;
+                      justify-content: center; z-index: 9999; cursor: pointer;
+                    `;
+                    const img = document.createElement('img');
+                    img.src = image;
+                    img.style.cssText = 'max-width: 90%; max-height: 90%; border-radius: 12px;';
+                    modal.appendChild(img);
+                    document.body.appendChild(modal);
+                    modal.onclick = () => document.body.removeChild(modal);
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <img
+              src={trade.screenshot}
+              alt="交易截圖"
+              style={{
+                width: '100%',
+                maxHeight: '200px',
+                objectFit: 'cover',
+                borderRadius: '12px',
+                border: `2px solid rgba(0, 212, 255, 0.2)`,
+                cursor: 'pointer'
+              }}
+              onClick={() => {
+                // 簡單的圖片放大效果
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                  background: rgba(0,0,0,0.9); display: flex; align-items: center;
+                  justify-content: center; z-index: 9999; cursor: pointer;
+                `;
+                const img = document.createElement('img');
+                img.src = trade.screenshot;
+                img.style.cssText = 'max-width: 90%; max-height: 90%; border-radius: 12px;';
+                modal.appendChild(img);
+                document.body.appendChild(modal);
+                modal.onclick = () => document.body.removeChild(modal);
+              }}
+            />
+          )}
+        </div>
+      )}
+      
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px'}}>
+        <div>
+          <span style={{color: colors.txt2, fontSize: '12px', fontWeight: '600'}}>進場時間</span>
+          <div style={{color: colors.txt0, fontSize: '14px', marginTop: '4px'}}>
+            {trade.entryDate ? new Date(trade.entryDate).toLocaleString('zh-TW') : 'N/A'}
+          </div>
+        </div>
+        <div>
+          <span style={{color: colors.txt2, fontSize: '12px', fontWeight: '600'}}>進場價格</span>
+          <div style={{color: colors.txt0, fontSize: '14px', marginTop: '4px'}}>
+            {trade.entryPrice || 'N/A'}
+          </div>
+        </div>
+        <div>
+          <span style={{color: colors.txt2, fontSize: '12px', fontWeight: '600'}}>交易手數</span>
+          <div style={{color: colors.txt0, fontSize: '14px', marginTop: '4px'}}>
+            {trade.lotSize || 'N/A'}
+          </div>
+        </div>
+        <div>
+          <span style={{color: colors.txt2, fontSize: '12px', fontWeight: '600'}}>按計劃管理</span>
+          <div style={{color: trade.managedByPlan === '是' ? colors.ok : colors.err, fontSize: '14px', marginTop: '4px'}}>
+            {trade.managedByPlan || 'N/A'}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
