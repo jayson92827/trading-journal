@@ -1012,6 +1012,9 @@ const TradingJournalApp = () => {
     const personalRecords = gameData.personalRecords || {};
     const newPersonalRecords = { ...personalRecords };
     
+    // 重新計算勝利交易（確保所有盈利交易都算）
+    const winTrades = tradingTrades.filter(trade => trade.closed && (trade.profitLoss || 0) > 0);
+    
     // 最長連勝紀錄
     newPersonalRecords.longest_win_streak = Math.max(
       newPersonalRecords.longest_win_streak || 0,
@@ -1019,17 +1022,18 @@ const TradingJournalApp = () => {
     );
     
     // 單筆最大獲利
-    const maxProfit = Math.max(...tradingTrades.map(t => t.profitLoss || 0), 0);
+    const allProfits = tradingTrades.map(t => parseFloat(t.profitLoss) || 0).filter(p => p > 0);
+    const maxProfit = allProfits.length > 0 ? Math.max(...allProfits) : 0;
     newPersonalRecords.biggest_single_profit = Math.max(
       newPersonalRecords.biggest_single_profit || 0,
       maxProfit
     );
     
     // 計算總獲利和勝率
-    const totalProfit = tradingTrades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0);
+    const totalProfit = tradingTrades.reduce((sum, trade) => sum + (parseFloat(trade.profitLoss) || 0), 0);
     const winRate = closedTrades.length > 0 ? (winTrades.length / closedTrades.length) * 100 : 0;
     
-    // 最佳月度回報 (這裡簡化為總回報率)
+    // 最佳月度回報 (總回報率)
     const returnRate = totalProfit > 0 ? (totalProfit / 10000) * 100 : 0;
     newPersonalRecords.best_monthly_return = Math.max(
       newPersonalRecords.best_monthly_return || 0,
@@ -1929,7 +1933,7 @@ const TradingJournalApp = () => {
             </div>
             
             {/* 火焰條顯示 */}
-            <FlameStreak gameData={gameData} trades={trades} onUpdate={saveGameData} />
+            <FlameStreak gameData={gameData} trades={trades} onUpdate={saveGameData} currentFormData={formData} />
             
             <div style={cardStyle}>
               <div style={{display: 'grid', gap: '24px'}}>
@@ -2256,14 +2260,50 @@ const TradingJournalApp = () => {
                   <button
                     onClick={() => {
                       if (window.confirm('確定要重置所有遊戲進度嗎？')) {
-                        setGameData(defaultGameData);
+                        // 創建全新的默認數據副本
+                        const freshGameData = {
+                          xp: 0,
+                          level: 1,
+                          achievements: [],
+                          skills: {
+                            technical_analysis: 1,
+                            risk_management: 1,
+                            psychology: 1
+                          },
+                          streaks: {
+                            current_win: 0,
+                            best_win: 0,
+                            current_days: 0,
+                            best_days: 0
+                          },
+                          stats: {
+                            total_trades: 0,
+                            winning_trades: 0,
+                            plan_adherence: 0,
+                            risk_control_rate: 0
+                          },
+                          personalRecords: {
+                            longest_win_streak: 0,
+                            biggest_single_profit: 0,
+                            best_monthly_return: 0,
+                            perfect_risk_days: 0,
+                            trading_consistency: 0,
+                            emotional_control_score: 0
+                          }
+                        };
+                        
+                        setGameData(freshGameData);
                         localStorage.removeItem('tradingJournalGameData');
+                        localStorage.setItem('tradingJournalGameData', JSON.stringify(freshGameData));
                         
                         // 重置用戶專用的遊戲數據
                         if (user) {
                           const userKey = user.email || user.id;
                           localStorage.removeItem(`tradingJournalGameData_${userKey}`);
+                          localStorage.setItem(`tradingJournalGameData_${userKey}`, JSON.stringify(freshGameData));
                         }
+                        
+                        alert('遊戲進度已完全重置！');
                       }
                     }}
                     style={{...buttonStyle, backgroundColor: colors.err}}
@@ -3043,17 +3083,72 @@ const downloadJSON = (data, filename) => {
 };
 
 // 火焰條組件 - 連續記錄天數追蹤 - 增強版
-const FlameStreak = ({ gameData, trades, onUpdate }) => {
+const FlameStreak = ({ gameData, trades, onUpdate, currentFormData = null }) => {
   const today = new Date().toDateString();
   
   // 檢查今天是否有記錄（交易日或非交易日都算）
-  const hasRecordToday = trades.some(trade => {
+  let hasRecordToday = trades.some(trade => {
     const tradeDate = trade.date || trade.entryDate;
     return tradeDate && new Date(tradeDate).toDateString() === today;
   });
   
-  // 計算連續記錄天數 - 直接使用 gameData 中的數據
-  const currentStreak = gameData?.streaks?.current_days || 0;
+  // 如果正在編輯，且當前表單日期是今天，也算有記錄
+  if (currentFormData && currentFormData.entryDate) {
+    const formDate = new Date(currentFormData.entryDate).toDateString();
+    if (formDate === today) {
+      hasRecordToday = true;
+    }
+  }
+  
+  // 動態計算連續記錄天數
+  const calculateDynamicStreak = () => {
+    // 創建包含當前表單數據的模擬交易列表
+    let allTrades = [...trades];
+    if (currentFormData && currentFormData.entryDate) {
+      const mockTrade = {
+        id: 'temp',
+        date: currentFormData.entryDate,
+        entryDate: currentFormData.entryDate
+      };
+      allTrades = [...allTrades, mockTrade];
+    }
+    
+    const recordDates = [...new Set(allTrades.map(trade => {
+      const date = trade.date || trade.entryDate;
+      return date ? new Date(date).toDateString() : null;
+    }))].filter(Boolean).sort((a, b) => new Date(b) - new Date(a));
+    
+    let recordStreak = 0;
+    
+    if (recordDates.length > 0) {
+      const latestRecordDate = recordDates[0];
+      const latestDate = new Date(latestRecordDate);
+      const todayDate = new Date(today);
+      
+      const daysDiff = Math.floor((todayDate - latestDate) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff <= 1) {
+        recordStreak = 1;
+        
+        for (let i = 1; i < recordDates.length; i++) {
+          const currentDate = new Date(recordDates[i - 1]);
+          const prevDate = new Date(recordDates[i]);
+          const daysBetween = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24));
+          
+          if (daysBetween <= 3) {
+            recordStreak++;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+    
+    return recordStreak;
+  };
+  
+  // 使用動態計算的連勝天數，如果沒有表單數據則使用 gameData 中的數據
+  const currentStreak = currentFormData ? calculateDynamicStreak() : (gameData?.streaks?.current_days || 0);
   const maxStreak = 30;
   
   const getFlameEmoji = (days) => {
