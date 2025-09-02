@@ -2303,6 +2303,9 @@ const TradingJournalApp = () => {
                         }
                         
                         alert('遊戲進度已完全重置！');
+                        
+                        // 強制頁面刷新以確保所有組件重新渲染
+                        window.location.reload();
                       }
                     }}
                     style={{...buttonStyle, backgroundColor: colors.err}}
@@ -5302,7 +5305,7 @@ const SkillTree = ({ gameData, onUpgrade }) => {
         gap: '20px'
       }}>
         {skillBranches.map(branch => {
-          const currentLevel = gameData.skills?.[branch.id] || 0;
+          const currentLevel = gameData.skills?.[branch.id] || 1;
           
           return (
             <div key={branch.id} style={{
