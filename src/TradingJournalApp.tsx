@@ -2314,18 +2314,62 @@ const TradingJournalApp = () => {
                   </button>
                   <button
                     onClick={() => {
-                      if (window.confirm('確定要重置所有交易記錄和帳戶餘額嗎？')) {
+                      if (window.confirm('確定要重置所有交易記錄和帳戶餘額嗎？這也會重置技能樹和遊戲進度。')) {
+                        // 重置交易記錄和餘額
                         setTrades([]);
                         setAccountBalance(10000);
                         localStorage.removeItem('tradingJournalTrades');
                         localStorage.setItem('tradingJournalBalance', '10000');
+                        
+                        // 重置遊戲數據（包括技能樹）
+                        const freshGameData = {
+                          xp: 0,
+                          level: 1,
+                          achievements: [],
+                          skills: {
+                            technical_analysis: 1,
+                            risk_management: 1,
+                            psychology: 1
+                          },
+                          streaks: {
+                            current_win: 0,
+                            best_win: 0,
+                            current_days: 0,
+                            best_days: 0
+                          },
+                          stats: {
+                            total_trades: 0,
+                            win_rate: 0,
+                            avg_return: 0,
+                            total_return: 0,
+                            best_trade: 0,
+                            worst_trade: 0,
+                            avg_hold_time: 0,
+                            profit_factor: 0,
+                            sharpe_ratio: 0,
+                            max_drawdown: 0,
+                            trading_consistency: 0,
+                            emotional_control_score: 0
+                          }
+                        };
+                        
+                        setGameData(freshGameData);
+                        localStorage.removeItem('tradingJournalGameData');
+                        localStorage.setItem('tradingJournalGameData', JSON.stringify(freshGameData));
                         
                         // 重置用戶專用的數據
                         if (user) {
                           const userKey = user.email || user.id;
                           localStorage.removeItem(`tradingJournalTrades_${userKey}`);
                           localStorage.setItem(`tradingJournalBalance_${userKey}`, '10000');
+                          localStorage.removeItem(`tradingJournalGameData_${userKey}`);
+                          localStorage.setItem(`tradingJournalGameData_${userKey}`, JSON.stringify(freshGameData));
                         }
+                        
+                        alert('交易記錄和遊戲進度已完全重置！');
+                        
+                        // 強制頁面刷新以確保所有組件重新渲染
+                        window.location.reload();
                       }
                     }}
                     style={{...buttonStyle, backgroundColor: colors.warn}}
