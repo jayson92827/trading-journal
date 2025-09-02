@@ -739,6 +739,11 @@ const TradingJournalApp = () => {
         const completeGameData = {
           ...defaultGameData,
           ...loadedGameData,
+          // 確保skills屬性正確載入，如果沒有或為undefined，使用默認值
+          skills: {
+            ...defaultGameData.skills,
+            ...(loadedGameData.skills || {})
+          },
           personalBrand: {
             ...defaultGameData.personalBrand,
             ...(loadedGameData.personalBrand || {})
@@ -750,6 +755,10 @@ const TradingJournalApp = () => {
           unlockedFeatures: loadedGameData.unlockedFeatures || defaultGameData.unlockedFeatures,
           milestones: loadedGameData.milestones || defaultGameData.milestones
         };
+        
+        // 調試：檢查載入的技能數據
+        console.log('載入的技能數據:', completeGameData.skills);
+        
         setGameData(completeGameData);
       }
       
@@ -2300,6 +2309,13 @@ const TradingJournalApp = () => {
                           const userKey = user.email || user.id;
                           localStorage.removeItem(`tradingJournalGameData_${userKey}`);
                           localStorage.setItem(`tradingJournalGameData_${userKey}`, JSON.stringify(freshGameData));
+                          
+                          // 額外清理：移除任何可能的緩存或舊數據
+                          localStorage.removeItem('tradingJournalGameData');
+                          localStorage.setItem('tradingJournalGameData', JSON.stringify(freshGameData));
+                          
+                          // 調試：確認localStorage已被清除
+                          console.log('重置後的localStorage gameData:', localStorage.getItem(`tradingJournalGameData_${userKey}`));
                         }
                         
                         alert('遊戲進度已完全重置！');
@@ -2364,6 +2380,14 @@ const TradingJournalApp = () => {
                           localStorage.setItem(`tradingJournalBalance_${userKey}`, '10000');
                           localStorage.removeItem(`tradingJournalGameData_${userKey}`);
                           localStorage.setItem(`tradingJournalGameData_${userKey}`, JSON.stringify(freshGameData));
+                          
+                          // 額外清理：移除任何可能的緩存或舊數據
+                          localStorage.removeItem('tradingJournalTrades');
+                          localStorage.removeItem('tradingJournalGameData');
+                          localStorage.setItem('tradingJournalGameData', JSON.stringify(freshGameData));
+                          
+                          // 調試：確認localStorage已被清除
+                          console.log('重置後的localStorage gameData:', localStorage.getItem(`tradingJournalGameData_${userKey}`));
                         }
                         
                         alert('交易記錄和遊戲進度已完全重置！');
