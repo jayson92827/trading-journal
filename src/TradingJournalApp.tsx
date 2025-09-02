@@ -5215,10 +5215,10 @@ const SkillTree = ({ gameData, onUpgrade }) => {
   const handleSkillUpgrade = (skillId, levelIndex) => {
     const skill = skillBranches.find(s => s.id === skillId);
     const level = skill.levels[levelIndex];
-    const currentSkillLevel = gameData.skills?.[skillId] || 0;
+    const currentSkillLevel = gameData.skills?.[skillId] || 1;
     
     // 檢查是否可以升級
-    if (levelIndex !== currentSkillLevel || currentXP < level.xpCost) {
+    if (levelIndex !== (currentSkillLevel - 1) || currentXP < level.xpCost) {
       return;
     }
     
