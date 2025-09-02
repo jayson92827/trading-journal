@@ -948,7 +948,7 @@ const TradingJournalApp = () => {
       if (trade.learningActivity && trade.learningActivity.length > 0) totalXP += 8;
     });
     
-    // 計算連續記錄天數
+    // 計算連續記錄天數 - 簡化邏輯
     const recordDates = [...new Set(newTrades.map(trade => {
       const date = trade.date || trade.entryDate;
       return date ? new Date(date).toDateString() : null;
@@ -957,19 +957,30 @@ const TradingJournalApp = () => {
     const today = new Date().toDateString();
     let recordStreak = 0;
     
-    if (recordDates.includes(today)) {
-      recordStreak = 1;
+    if (recordDates.length > 0) {
+      // 檢查最近的記錄日期
+      const latestRecordDate = recordDates[0];
+      const latestDate = new Date(latestRecordDate);
       const todayDate = new Date(today);
       
-      for (let i = 1; i <= 30; i++) { // 最多檢查30天
-        const prevDay = new Date(todayDate);
-        prevDay.setDate(todayDate.getDate() - i);
-        const prevDayStr = prevDay.toDateString();
+      // 計算天數差距
+      const daysDiff = Math.floor((todayDate - latestDate) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff <= 1) { // 今天或昨天有記錄
+        recordStreak = 1;
         
-        if (recordDates.includes(prevDayStr)) {
-          recordStreak++;
-        } else {
-          break;
+        // 計算連續記錄天數
+        for (let i = 1; i < recordDates.length; i++) {
+          const currentDate = new Date(recordDates[i - 1]);
+          const prevDate = new Date(recordDates[i]);
+          const daysBetween = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24));
+          
+          // 如果間隔不超過3天（考慮周末），視為連續
+          if (daysBetween <= 3) {
+            recordStreak++;
+          } else {
+            break;
+          }
         }
       }
     }
@@ -997,12 +1008,78 @@ const TradingJournalApp = () => {
     
     bestWinStreak = Math.max(bestWinStreak, currentWinStreak);
     
+    // 計算個人最佳記錄
+    const personalRecords = gameData.personalRecords || {};
+    const newPersonalRecords = { ...personalRecords };
+    
+    // 最長連勝紀錄
+    newPersonalRecords.longest_win_streak = Math.max(
+      newPersonalRecords.longest_win_streak || 0,
+      bestWinStreak
+    );
+    
+    // 單筆最大獲利
+    const maxProfit = Math.max(...tradingTrades.map(t => t.profitLoss || 0), 0);
+    newPersonalRecords.biggest_single_profit = Math.max(
+      newPersonalRecords.biggest_single_profit || 0,
+      maxProfit
+    );
+    
+    // 計算總獲利和勝率
+    const totalProfit = tradingTrades.reduce((sum, trade) => sum + (trade.profitLoss || 0), 0);
+    const winRate = closedTrades.length > 0 ? (winTrades.length / closedTrades.length) * 100 : 0;
+    
+    // 最佳月度回報 (這裡簡化為總回報率)
+    const returnRate = totalProfit > 0 ? (totalProfit / 10000) * 100 : 0;
+    newPersonalRecords.best_monthly_return = Math.max(
+      newPersonalRecords.best_monthly_return || 0,
+      returnRate
+    );
+    
+    // 完美風控天數（所有交易都有風控）
+    const riskControlDays = recordDates.length > 0 ? 
+      recordDates.filter(date => {
+        const dayTrades = tradingTrades.filter(trade => 
+          new Date(trade.date || trade.entryDate).toDateString() === date
+        );
+        return dayTrades.length > 0 && dayTrades.every(trade => trade.riskControl === '是');
+      }).length : 0;
+    
+    newPersonalRecords.perfect_risk_days = Math.max(
+      newPersonalRecords.perfect_risk_days || 0,
+      riskControlDays
+    );
+    
+    // 交易一致性（策略遵守率）
+    const strategyCompliantTrades = tradingTrades.filter(trade => 
+      trade.strategyCompliant === '是 ✅'
+    ).length;
+    const consistencyRate = tradingTrades.length > 0 ? 
+      (strategyCompliantTrades / tradingTrades.length) * 100 : 0;
+    
+    newPersonalRecords.trading_consistency = Math.max(
+      newPersonalRecords.trading_consistency || 0,
+      consistencyRate
+    );
+    
+    // 情緒控制分數（冷靜交易比例）
+    const calmTrades = tradingTrades.filter(trade => 
+      trade.emotionalState === '冷靜'
+    ).length;
+    const emotionalScore = tradingTrades.length > 0 ? 
+      (calmTrades / tradingTrades.length) * 100 : 0;
+    
+    newPersonalRecords.emotional_control_score = Math.max(
+      newPersonalRecords.emotional_control_score || 0,
+      emotionalScore
+    );
+    
     // 檢查並解鎖成就
     const currentAchievements = gameData.achievements || [];
     let newAchievements = [...currentAchievements];
     let newlyUnlockedAchievements = [];
     
-    // 首次盈利
+    // 首次盈利 - 修正：所有盈利交易都算，不管是否按計劃
     const winTrades = tradingTrades.filter(trade => trade.closed && trade.profitLoss > 0);
     if (winTrades.length >= 1 && !newAchievements.includes('first_profit')) {
       newAchievements.push('first_profit');
@@ -1035,6 +1112,7 @@ const TradingJournalApp = () => {
       ...gameData,
       xp: totalXP,
       achievements: newAchievements,
+      personalRecords: newPersonalRecords,
       streaks: {
         current_win: currentWinStreak,
         best_win: bestWinStreak,
@@ -2180,6 +2258,12 @@ const TradingJournalApp = () => {
                       if (window.confirm('確定要重置所有遊戲進度嗎？')) {
                         setGameData(defaultGameData);
                         localStorage.removeItem('tradingJournalGameData');
+                        
+                        // 重置用戶專用的遊戲數據
+                        if (user) {
+                          const userKey = user.email || user.id;
+                          localStorage.removeItem(`tradingJournalGameData_${userKey}`);
+                        }
                       }
                     }}
                     style={{...buttonStyle, backgroundColor: colors.err}}
@@ -2193,6 +2277,13 @@ const TradingJournalApp = () => {
                         setAccountBalance(10000);
                         localStorage.removeItem('tradingJournalTrades');
                         localStorage.setItem('tradingJournalBalance', '10000');
+                        
+                        // 重置用戶專用的數據
+                        if (user) {
+                          const userKey = user.email || user.id;
+                          localStorage.removeItem(`tradingJournalTrades_${userKey}`);
+                          localStorage.setItem(`tradingJournalBalance_${userKey}`, '10000');
+                        }
                       }
                     }}
                     style={{...buttonStyle, backgroundColor: colors.warn}}
