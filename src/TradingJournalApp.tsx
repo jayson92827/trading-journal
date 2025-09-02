@@ -1084,7 +1084,6 @@ const TradingJournalApp = () => {
     let newlyUnlockedAchievements = [];
     
     // 首次盈利 - 修正：所有盈利交易都算，不管是否按計劃
-    const winTrades = tradingTrades.filter(trade => trade.closed && trade.profitLoss > 0);
     if (winTrades.length >= 1 && !newAchievements.includes('first_profit')) {
       newAchievements.push('first_profit');
       newlyUnlockedAchievements.push('first_profit');
